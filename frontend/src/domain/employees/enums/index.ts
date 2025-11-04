@@ -23,4 +23,5 @@ export enum Designation {
   LIBRARIAN = 15,
   DRIVER = 16,
   COOK = 17,
+  EDUCATION_SECRETARY = 18,
 }

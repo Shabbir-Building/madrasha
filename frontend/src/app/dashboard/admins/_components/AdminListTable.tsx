@@ -62,6 +62,17 @@ interface AdminListTableProps<TData, TValue> {
   description?: string;
 }
 
+/**
+ * Gets the priority order for admin type sorting.
+ * Lower numbers appear first.
+ */
+function getAdminTypePriority(adminType: string | null | undefined): number {
+  if (adminType === 'Super Admin') {
+    return 1;
+  }
+  return 2; // All other admin types (including 'Admin' and any other values)
+}
+
 export function AdminListTable<TData, TValue>({
   columns,
   data,
@@ -96,6 +107,17 @@ export function AdminListTable<TData, TValue>({
       toast.error(getErrorMessage(error as FetchBaseQueryError | SerializedError | undefined));
     }
   };
+
+  // Sort data by admin type priority before passing to table
+  const sortedData = React.useMemo(() => {
+    const admins = data as Admin[];
+    // Sort by admin type priority, maintaining stable sort for admins with same priority
+    return [...admins].sort((a, b) => {
+      const priorityA = getAdminTypePriority(a.type ?? null);
+      const priorityB = getAdminTypePriority(b.type ?? null);
+      return priorityA - priorityB;
+    }) as TData[];
+  }, [data]);
 
   const updatedColumns = React.useMemo(() => {
     return columns.map((column) => {
@@ -136,7 +158,7 @@ export function AdminListTable<TData, TValue>({
   }, [columns]);
 
   const table = useReactTable({
-    data,
+    data: sortedData,
     columns: updatedColumns,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),

@@ -4,6 +4,7 @@ export const DESIGNATION_BY_EMPLOYEE_TYPE: Record<EmployeeType, Designation[]> =
   [EmployeeType.ADMINISTRATION]: [
     Designation.PRINCIPAL_HEAD_MUHTAMIM,
     Designation.VICE_PRINCIPAL_NAIB_MUHTAMIM,
+    Designation.EDUCATION_SECRETARY,
     Designation.OFFICE_ADMINISTRATOR,
     Designation.ACCOUNTANT,
   ],
