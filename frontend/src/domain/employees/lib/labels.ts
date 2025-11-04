@@ -25,4 +25,5 @@ export const DESIGNATION_LABELS: Record<Designation, string> = {
   [Designation.LIBRARIAN]: 'Librarian',
   [Designation.DRIVER]: 'Driver',
   [Designation.COOK]: 'Cook',
+  [Designation.EDUCATION_SECRETARY]: 'Education Secretary',
 };

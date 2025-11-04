@@ -2,6 +2,7 @@
 
 import { Branch, toBranchLabel } from '@/domain/branches';
 import {
+  Designation,
   type Employee,
   EmployeeType,
   formatDesignation,
@@ -46,6 +47,23 @@ interface EmployeeListTableProps<TData, TValue> {
   description?: string;
 }
 
+/**
+ * Gets the priority order for employee designation sorting.
+ * Lower numbers appear first.
+ */
+function getDesignationPriority(designation: number | null | undefined): number {
+  if (designation === Designation.PRINCIPAL_HEAD_MUHTAMIM) {
+    return 1;
+  }
+  if (designation === Designation.VICE_PRINCIPAL_NAIB_MUHTAMIM) {
+    return 2;
+  }
+  if (designation === Designation.EDUCATION_SECRETARY) {
+    return 3;
+  }
+  return 999; // All other designations and null/undefined
+}
+
 export function EmployeeListTable<TData, TValue>({
   columns,
   data,
@@ -75,6 +93,13 @@ export function EmployeeListTable<TData, TValue>({
         (employee) => (employee as unknown as Employee).employment_type === employmentTypeFilter,
       );
     }
+
+    // Sort by designation priority, maintaining stable sort for employees with same priority
+    filtered = [...filtered].sort((a, b) => {
+      const priorityA = getDesignationPriority(a.designation ?? null);
+      const priorityB = getDesignationPriority(b.designation ?? null);
+      return priorityA - priorityB;
+    });
 
     return filtered as TData[];
   }, [data, nameSearch, branchFilter, employmentTypeFilter]);
