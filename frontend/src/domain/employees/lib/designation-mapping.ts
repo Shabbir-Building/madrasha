@@ -2,29 +2,26 @@ import { Designation, EmployeeType } from '@/domain/employees/enums';
 
 export const DESIGNATION_BY_EMPLOYEE_TYPE: Record<EmployeeType, Designation[]> = {
   [EmployeeType.ADMINISTRATION]: [
+    Designation.CHAIRMAN,
     Designation.PRINCIPAL_HEAD_MUHTAMIM,
     Designation.VICE_PRINCIPAL_NAIB_MUHTAMIM,
-    Designation.EDUCATION_SECRETARY,
-    Designation.OFFICE_ADMINISTRATOR,
-    Designation.ACCOUNTANT,
+    Designation.CO_ORDINATOR,
   ],
   [EmployeeType.TEACHER]: [
-    Designation.SUBJECT_TEACHER,
-    Designation.GENERAL_SUBJECTS_TEACHER,
-    Designation.HIFZ_TEACHER,
-    Designation.ASSISTANT_TEACHER,
-    Designation.MUALLIM,
-    Designation.MUALLIMA,
+    Designation.HAFEZ,
+    Designation.NURANI_TEACHER,
+    Designation.ARABIC_TEACHER,
+    Designation.GENERAL_TEACHER,
   ],
   [EmployeeType.MEDIA_IT]: [
-    Designation.DEVELOPER,
     Designation.MEDIA_MANAGER,
-    Designation.COMPUTER_OPERATOR,
+    Designation.IT_MANAGER,
+    Designation.DEVELOPER,
   ],
   [EmployeeType.STAFF]: [
-    Designation.PEON,
-    Designation.LIBRARIAN,
-    Designation.DRIVER,
     Designation.COOK,
+    Designation.GATEKEEPER,
+    Designation.DRIVER,
+    Designation.CLEANER,
   ],
 };

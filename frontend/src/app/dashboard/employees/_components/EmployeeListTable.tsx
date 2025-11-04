@@ -52,14 +52,17 @@ interface EmployeeListTableProps<TData, TValue> {
  * Lower numbers appear first.
  */
 function getDesignationPriority(designation: number | null | undefined): number {
-  if (designation === Designation.PRINCIPAL_HEAD_MUHTAMIM) {
+  if (designation === Designation.CHAIRMAN) {
     return 1;
   }
-  if (designation === Designation.VICE_PRINCIPAL_NAIB_MUHTAMIM) {
+  if (designation === Designation.PRINCIPAL_HEAD_MUHTAMIM) {
     return 2;
   }
-  if (designation === Designation.EDUCATION_SECRETARY) {
+  if (designation === Designation.VICE_PRINCIPAL_NAIB_MUHTAMIM) {
     return 3;
+  }
+  if (designation === Designation.CO_ORDINATOR) {
+    return 4;
   }
   return 999; // All other designations and null/undefined
 }
