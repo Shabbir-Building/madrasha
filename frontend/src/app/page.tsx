@@ -10,7 +10,7 @@ import BackgroundSlider from '@/components/ui/background-slider';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
-  const sliderImages = [MadrashaImage1, MadrashaImage2, MadrashaImage3];
+  const sliderImages = [MadrashaImage2, MadrashaImage3];
 
   return (
     <>
