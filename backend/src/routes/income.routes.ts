@@ -5,6 +5,7 @@ import {
   getIncomeById,
   createIncome,
   updateIncome,
+  deleteIncome,
 } from "../controllers/income.controller";
 import { validate } from "../middlewares/validation/validate";
 import {
@@ -26,5 +27,7 @@ router.post(
 );
 
 router.put("/:id", validate(updateIncomeSchema), asyncHandler(updateIncome));
+
+router.delete("/:id", asyncHandler(deleteIncome));
 
 export default router;

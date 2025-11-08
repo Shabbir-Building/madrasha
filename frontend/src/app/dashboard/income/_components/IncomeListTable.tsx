@@ -3,6 +3,7 @@
 import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import { INCOME_TYPE_LABELS, IncomeType as IncomeTypeEnum } from '@/domain/income';
 import { formatDate, getCurrentYear } from '@/lib/date-utils';
+import { deleteIncome } from '@/services/income';
 import type { Income } from '@/services/income/types';
 import {
   type ColumnDef,
@@ -12,9 +13,13 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Plus } from 'lucide-react';
+import { MoreHorizontal, Plus } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
 import * as React from 'react';
+
+import { useRouter } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +27,9 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -35,16 +43,17 @@ import {
 } from '@/components/ui/table';
 
 import { AddIncomeModal } from './AddIncomeModal';
+import { DeleteIncomeModal } from './DeleteIncomeModal';
 import { EditIncomeModal } from './EditIncomeModal';
 
 export type { Income };
 
-interface IncomeListTableProps<TData, TValue> {
+type IncomeListTableProps<TData, TValue> = {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   title?: string;
   description?: string;
-}
+};
 
 export function IncomeListTable<TData, TValue>({
   columns,
@@ -53,8 +62,12 @@ export function IncomeListTable<TData, TValue>({
 }: IncomeListTableProps<TData, TValue>) {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [selectedIncome, setSelectedIncome] = React.useState<Income | null>(null);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const router = useRouter();
+  const { data: session } = useSession();
 
   // Search and filter states
   const [noteSearch, setNoteSearch] = React.useState<string>('');
@@ -66,6 +79,34 @@ export function IncomeListTable<TData, TValue>({
   const handleEditIncome = (income: Income) => {
     setSelectedIncome(income);
     setIsEditModalOpen(true);
+  };
+
+  const handleDeleteIncome = (income: Income) => {
+    setSelectedIncome(income);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async (income: Income) => {
+    setIsDeleting(true);
+    try {
+      const { error } = await deleteIncome(income._id, {
+        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+      });
+
+      if (error) {
+        throw new Error(error.statusText || 'Failed to delete income');
+      }
+
+      toast.success('Income deleted successfully');
+      setIsDeleteModalOpen(false);
+      setSelectedIncome(null);
+      router.refresh();
+    } catch (error) {
+      console.error('Error deleting income:', error);
+      toast.error('Failed to delete income');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const filteredData = React.useMemo(() => {
@@ -118,13 +159,27 @@ export function IncomeListTable<TData, TValue>({
           cell: ({ row }: { row: any }) => {
             const income = row.original as Income;
             return (
-              <Button
-                variant="link"
-                className="h-auto p-0 text-sm text-primary underline"
-                onClick={() => handleEditIncome(income)}
-              >
-                Edit
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">Open menu</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleEditIncome(income)}>
+                    Edit income
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => handleDeleteIncome(income)}
+                  >
+                    Delete income
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             );
           },
         };
@@ -375,8 +430,25 @@ export function IncomeListTable<TData, TValue>({
       <AddIncomeModal open={isModalOpen} onOpenChange={setIsModalOpen} />
       <EditIncomeModal
         open={isEditModalOpen}
-        onOpenChange={setIsEditModalOpen}
+        onOpenChange={(open) => {
+          setIsEditModalOpen(open);
+          if (!open) {
+            setSelectedIncome(null);
+          }
+        }}
         income={selectedIncome}
+      />
+      <DeleteIncomeModal
+        open={isDeleteModalOpen}
+        onOpenChange={(open) => {
+          setIsDeleteModalOpen(open);
+          if (!open) {
+            setSelectedIncome(null);
+          }
+        }}
+        income={selectedIncome}
+        onConfirm={handleDeleteConfirm}
+        confirmLoading={isDeleting}
       />
     </div>
   );
