@@ -2,6 +2,7 @@ import {
   type CacheConfig,
   type FetchOptions,
   type PaginationResult,
+  publicDelete,
   publicPost,
   publicPut,
   serverGet,
@@ -23,7 +24,11 @@ const createExpense = async (body: CreateExpenseInput, fetchOptions?: FetchOptio
   return response;
 };
 
-const updateExpense = async (id: string, body: UpdateExpenseInput, fetchOptions?: FetchOptions) => {
+const updateExpense = async (
+  id: string,
+  body: UpdateExpenseInput,
+  fetchOptions?: FetchOptions,
+) => {
   const response = await publicPut<unknown>('/expenses/:id', body, {
     ...fetchOptions,
     params: { id },
@@ -31,4 +36,12 @@ const updateExpense = async (id: string, body: UpdateExpenseInput, fetchOptions?
   return response;
 };
 
-export { getExpenses, createExpense, updateExpense };
+const deleteExpense = async (id: string, fetchOptions?: FetchOptions) => {
+  const response = await publicDelete<unknown>('/expenses/:id', {
+    ...fetchOptions,
+    params: { id },
+  });
+  return response;
+};
+
+export { getExpenses, createExpense, updateExpense, deleteExpense };

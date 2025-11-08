@@ -6,6 +6,7 @@ import {
   type DonationTypeLabel,
 } from '@/domain/donations/constants';
 import { formatDate, getCurrentYear } from '@/lib/date-utils';
+import { deleteDonation } from '@/services/donation';
 import type { Donation as ApiDonation } from '@/services/donation/types';
 import {
   type ColumnDef,
@@ -15,9 +16,13 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Plus } from 'lucide-react';
+import { MoreHorizontal, Plus } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
 import * as React from 'react';
+
+import { useRouter } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +30,9 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -38,6 +46,7 @@ import {
 } from '@/components/ui/table';
 
 import { AddDonationModal } from './AddDonationModal';
+import { DeleteDonationModal } from './DeleteDonationModal';
 import { EditDonationModal } from './EditDonationModal';
 
 export type Donation = ApiDonation;
@@ -68,8 +77,12 @@ export function DonationListTable<TData, TValue>({
 }: DonationListTableProps<TData, TValue>) {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [selectedDonation, setSelectedDonation] = React.useState<Donation | null>(null);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const router = useRouter();
+  const { data: session } = useSession();
 
   // Search and filter states
   const [nameSearch, setNameSearch] = React.useState<string>('');
@@ -80,6 +93,34 @@ export function DonationListTable<TData, TValue>({
   const handleEditDonation = (donation: Donation) => {
     setSelectedDonation(donation);
     setIsEditModalOpen(true);
+  };
+
+  const handleDeleteDonation = (donation: Donation) => {
+    setSelectedDonation(donation);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async (donation: Donation) => {
+    setIsDeleting(true);
+    try {
+      const { error } = await deleteDonation(donation._id, {
+        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+      });
+
+      if (error) {
+        throw new Error(error.statusText || 'Failed to delete donation');
+      }
+
+      toast.success('Donation deleted successfully');
+      setIsDeleteModalOpen(false);
+      setSelectedDonation(null);
+      router.refresh();
+    } catch (error) {
+      console.error('Error deleting donation:', error);
+      toast.error('Failed to delete donation');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const filteredData = React.useMemo(() => {
@@ -132,13 +173,27 @@ export function DonationListTable<TData, TValue>({
           cell: ({ row }: { row: any }) => {
             const donation = row.original as Donation;
             return (
-              <Button
-                variant="link"
-                className="h-auto p-0 text-sm text-primary underline"
-                onClick={() => handleEditDonation(donation)}
-              >
-                Edit
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">Open menu</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleEditDonation(donation)}>
+                    Edit donation
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => handleDeleteDonation(donation)}
+                  >
+                    Delete donation
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             );
           },
         };
@@ -360,8 +415,25 @@ export function DonationListTable<TData, TValue>({
       <AddDonationModal open={isModalOpen} onOpenChange={setIsModalOpen} />
       <EditDonationModal
         open={isEditModalOpen}
-        onOpenChange={setIsEditModalOpen}
+        onOpenChange={(open) => {
+          setIsEditModalOpen(open);
+          if (!open) {
+            setSelectedDonation(null);
+          }
+        }}
         donation={selectedDonation}
+      />
+      <DeleteDonationModal
+        open={isDeleteModalOpen}
+        onOpenChange={(open) => {
+          setIsDeleteModalOpen(open);
+          if (!open) {
+            setSelectedDonation(null);
+          }
+        }}
+        donation={selectedDonation}
+        onConfirm={handleDeleteConfirm}
+        confirmLoading={isDeleting}
       />
     </div>
   );
