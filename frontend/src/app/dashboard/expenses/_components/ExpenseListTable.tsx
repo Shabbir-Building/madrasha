@@ -7,6 +7,7 @@ import {
   type ExpenseTypeLabel,
 } from '@/domain/expenses/constants';
 import { formatDate, getCurrentYear } from '@/lib/date-utils';
+import { deleteExpense } from '@/services/expense';
 import type { Expense as ApiExpense } from '@/services/expense/types';
 import {
   type ColumnDef,
@@ -16,9 +17,13 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Plus } from 'lucide-react';
+import { MoreHorizontal, Plus } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
 import * as React from 'react';
+
+import { useRouter } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,6 +31,9 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -39,6 +47,7 @@ import {
 } from '@/components/ui/table';
 
 import { AddExpenseModal } from './AddExpenseModal';
+import { DeleteExpenseModal } from './DeleteExpenseModal';
 import { EditExpenseModal } from './EditExpenseModal';
 
 export type Expense = ApiExpense;
@@ -66,8 +75,12 @@ type ExpenseListTableProps = {
 export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseListTableProps) {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [selectedExpense, setSelectedExpense] = React.useState<Expense | null>(null);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const router = useRouter();
+  const { data: session } = useSession();
 
   // Search and filter states
   const [noteSearch, setNoteSearch] = React.useState<string>('');
@@ -79,6 +92,34 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
   const handleEditExpense = (expense: Expense) => {
     setSelectedExpense(expense);
     setIsEditModalOpen(true);
+  };
+
+  const handleDeleteExpense = (expense: Expense) => {
+    setSelectedExpense(expense);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async (expense: Expense) => {
+    setIsDeleting(true);
+    try {
+      const { error } = await deleteExpense(expense._id, {
+        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+      });
+
+      if (error) {
+        throw new Error(error.statusText || 'Failed to delete expense');
+      }
+
+      toast.success('Expense deleted successfully');
+      setIsDeleteModalOpen(false);
+      setSelectedExpense(null);
+      router.refresh();
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      toast.error('Failed to delete expense');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const filteredData = React.useMemo(() => {
@@ -132,13 +173,27 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
           cell: ({ row }: { row: any }) => {
             const expense = row.original as Expense;
             return (
-              <Button
-                variant="link"
-                className="h-auto p-0 text-sm text-primary underline"
-                onClick={() => handleEditExpense(expense)}
-              >
-                Edit
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">Open menu</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleEditExpense(expense)}>
+                    Edit expense
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => handleDeleteExpense(expense)}
+                  >
+                    Delete expense
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             );
           },
         };
@@ -388,8 +443,25 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
       <AddExpenseModal open={isModalOpen} onOpenChange={setIsModalOpen} />
       <EditExpenseModal
         open={isEditModalOpen}
-        onOpenChange={setIsEditModalOpen}
+        onOpenChange={(open) => {
+          setIsEditModalOpen(open);
+          if (!open) {
+            setSelectedExpense(null);
+          }
+        }}
         expense={selectedExpense}
+      />
+      <DeleteExpenseModal
+        open={isDeleteModalOpen}
+        onOpenChange={(open) => {
+          setIsDeleteModalOpen(open);
+          if (!open) {
+            setSelectedExpense(null);
+          }
+        }}
+        expense={selectedExpense}
+        onConfirm={handleDeleteConfirm}
+        confirmLoading={isDeleting}
       />
     </div>
   );

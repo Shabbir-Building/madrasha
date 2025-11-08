@@ -2,6 +2,7 @@ import {
   type CacheConfig,
   type FetchOptions,
   type PaginationResult,
+  publicDelete,
   publicPost,
   publicPut,
   serverGet,
@@ -35,4 +36,12 @@ const updateDonation = async (
   return response;
 };
 
-export { getDonations, createDonation, updateDonation };
+const deleteDonation = async (id: string, fetchOptions?: FetchOptions) => {
+  const response = await publicDelete<unknown>('/donations/:id', {
+    ...fetchOptions,
+    params: { id },
+  });
+  return response;
+};
+
+export { getDonations, createDonation, updateDonation, deleteDonation };
