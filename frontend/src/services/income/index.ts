@@ -2,6 +2,7 @@ import {
   type CacheConfig,
   type FetchOptions,
   type PaginationResult,
+  publicDelete,
   publicPost,
   publicPut,
   serverGet,
@@ -35,4 +36,12 @@ const updateIncome = async (id: string, body: UpdateIncomeInput, fetchOptions?: 
   return response;
 };
 
-export { getIncomes, getIncomeById, createIncome, updateIncome };
+const deleteIncome = async (id: string, fetchOptions?: FetchOptions) => {
+  const response = await publicDelete<unknown>('/incomes/:id', {
+    ...fetchOptions,
+    params: { id },
+  });
+  return response;
+};
+
+export { getIncomes, getIncomeById, createIncome, updateIncome, deleteIncome };

@@ -180,3 +180,34 @@ export const updateIncome = async (
 
   res.status(HttpStatus.OK).json(response);
 };
+
+export const deleteIncome = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const admin = res.locals.admin as AuthenticatedAdmin | undefined;
+
+  if (!admin?.sub) {
+    throw new AppError("Unauthorized", HttpStatus.UNAUTHORIZED);
+  }
+
+  const { id } = req.params as { id: string };
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new AppError("Invalid income ID format", HttpStatus.BAD_REQUEST);
+  }
+
+  const deleted = await Income.findByIdAndDelete(id);
+
+  if (!deleted) {
+    throw new AppError("Income not found", HttpStatus.NOT_FOUND);
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    message: "Income deleted successfully",
+    timestamp: new Date().toISOString(),
+  };
+
+  res.status(HttpStatus.OK).json(response);
+};

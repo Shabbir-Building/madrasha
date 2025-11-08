@@ -113,4 +113,24 @@ const publicPut = async <T, E = unknown>(
   return { data: data?.data, error };
 };
 
-export { publicGet, publicPost, publicPatch, publicPut };
+const publicDelete = async <T, E = unknown>(endpoint: string, fetchOptions?: FetchOptions) => {
+  const { throw: shouldThrow, query, params, accessToken, ...restOptions } = fetchOptions || {};
+
+  let url = endpoint;
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      url = url.replace(`:${key}`, String(value));
+    });
+  }
+
+  const { data, error } = await betterFetch<ApiResponse<T>, Error & E>(url, {
+    method: 'DELETE',
+    query,
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    ...restOptions,
+  } as BetterFetchOption);
+  if (shouldThrow && error) throw error;
+  return { data: data?.data, error };
+};
+
+export { publicGet, publicPost, publicPatch, publicPut, publicDelete };
