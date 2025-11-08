@@ -13,6 +13,7 @@ export type CreateEmployeeInput = {
   bonus?: number;
   current_location: string;
   permanent_location: string;
+  disable?: boolean;
 };
 
 export type UpdateEmployeeInput = {
@@ -30,4 +31,5 @@ export type UpdateEmployeeInput = {
   bonus?: number;
   current_location?: string;
   permanent_location?: string;
+  disable?: boolean;
 };

@@ -78,6 +78,10 @@ const employeeSchema: Schema = new mongoose.Schema(
       required: true,
       maxlength: 250,
     },
+    disable: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

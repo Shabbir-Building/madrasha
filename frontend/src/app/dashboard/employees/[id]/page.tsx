@@ -10,6 +10,7 @@ import {
 } from '@/domain/employees';
 import { formatDate } from '@/lib/date-utils';
 import { getEmployeeById, updateEmployee } from '@/services/employees';
+import type { UpdateEmployeeInput } from '@/services/employees/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Camera, Edit2, Save, X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -21,6 +22,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
+import { ConfirmDeleteModal } from '@/components/modals/ConfirmDeleteModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -102,6 +104,8 @@ export default function EmployeeDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -298,6 +302,39 @@ export default function EmployeeDetailsPage() {
     fetchEmployee();
   };
 
+  const handleDeleteEmployee = async () => {
+    if (!id) {
+      toast.error('Invalid employee identifier');
+      return;
+    }
+
+    setIsDeleting(true);
+    setError(null);
+
+    try {
+      const payload: UpdateEmployeeInput = {
+        disable: true,
+      };
+
+      const { error: updateError } = await updateEmployee(id, payload, {
+        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+      });
+
+      if (updateError) {
+        throw new Error(updateError.statusText || 'Failed to delete employee');
+      }
+
+      toast.success('Employee deleted successfully');
+      setIsDeleteModalOpen(false);
+      router.push('/dashboard/employees');
+      router.refresh();
+    } catch {
+      toast.error('Failed to delete employee');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Calculate total salary
   const totalSalary = (Number(watchedValues.salary) || 0) + (Number(watchedValues.bonus) || 0);
 
@@ -333,6 +370,13 @@ export default function EmployeeDetailsPage() {
     );
   }
 
+  const initials =
+    watchedValues.fullname
+      ?.split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase() || 'EM';
+
   return (
     <div className="container mx-auto space-y-6">
       {/* Header */}
@@ -344,15 +388,7 @@ export default function EmployeeDetailsPage() {
                 src={imagePreview || watchedValues.profile_image}
                 alt={watchedValues.fullname}
               />
-              <AvatarFallback className="text-md">
-                {watchedValues.fullname
-                  ? watchedValues.fullname
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')
-                      .toUpperCase()
-                  : 'EM'}
-              </AvatarFallback>
+              <AvatarFallback className="text-md">{initials}</AvatarFallback>
             </Avatar>
             {isEditing && (
               <div
@@ -398,6 +434,13 @@ export default function EmployeeDetailsPage() {
               Edit
             </Button>
           )}
+          <Button
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="bg-destructive text-white hover:bg-destructive/90"
+            disabled={isDeleting}
+          >
+            Delete
+          </Button>
         </div>
       </div>
 
@@ -731,6 +774,35 @@ export default function EmployeeDetailsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDeleteModal
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        title="Delete Employee"
+        description="Are you sure you want to remove this employee? This action will disable the record instead of deleting it."
+        confirmLabel="Delete Employee"
+        confirmDisabled={isDeleting}
+        confirmLoading={isDeleting}
+        onConfirm={handleDeleteEmployee}
+      >
+        <div className="flex items-center gap-3">
+          <Avatar className="h-10 w-10">
+            <AvatarImage
+              src={imagePreview || watchedValues.profile_image || '/placeholder.svg'}
+              alt={watchedValues.fullname || 'Employee'}
+            />
+            <AvatarFallback className="text-sm font-medium">{initials}</AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="font-medium">{watchedValues.fullname || 'Employee'}</div>
+            <div className="text-sm text-muted-foreground">
+              {watchedValues.employment_type && watchedValues.designation
+                ? `${EMPLOYEE_TYPE_LABELS[watchedValues.employment_type as EmployeeType]} - ${DESIGNATION_LABELS[watchedValues.designation as Designation]}`
+                : 'Employee Details'}
+            </div>
+          </div>
+        </div>
+      </ConfirmDeleteModal>
     </div>
   );
 }

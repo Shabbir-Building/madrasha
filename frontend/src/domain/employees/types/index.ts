@@ -16,4 +16,5 @@ export type Employee = {
   current_location?: string;
   permanent_location?: string;
   resign_date?: string;
+  disable?: boolean;
 };

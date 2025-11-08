@@ -50,6 +50,7 @@ export const createEmployeeSchema = z.object({
     .string()
     .min(1, "Permanent location is required")
     .max(250, "Permanent location must not exceed 250 characters"),
+  disable: z.boolean().optional(),
 });
 
 export const updateEmployeeSchema = z.object({
@@ -121,4 +122,5 @@ export const updateEmployeeSchema = z.object({
     .min(1, "Permanent location is required")
     .max(250, "Permanent location must not exceed 250 characters")
     .optional(),
+  disable: z.boolean().optional(),
 });
