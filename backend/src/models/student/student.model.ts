@@ -71,6 +71,10 @@ const studentSchema: Schema = new mongoose.Schema(
       required: true,
       maxlength: 150,
     },
+    disable: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

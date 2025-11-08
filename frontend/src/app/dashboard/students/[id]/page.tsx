@@ -33,8 +33,9 @@ import { toast } from 'sonner';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
+import { ConfirmDeleteModal } from '@/components/modals/ConfirmDeleteModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -92,9 +93,12 @@ export default function StudentDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const { data: session } = useSession();
   const studentIdParam = params?.id;
   const studentId = Array.isArray(studentIdParam)
@@ -298,6 +302,49 @@ export default function StudentDetailsPage() {
     setIsEditing(false);
   };
 
+  const handleDeleteStudent = async () => {
+    if (!studentId) {
+      toast.error('Invalid student identifier');
+      return;
+    }
+
+    setIsDeleting(true);
+    setErrorMessage(null);
+
+    try {
+      const genderEnum = parseStudentGenderLabel(watchedValues.gender) ?? StudentGender.MALE;
+      const profileImage =
+        watchedValues.profile_image && watchedValues.profile_image.length > 0
+          ? watchedValues.profile_image
+          : STUDENT_PROFILE_PLACEHOLDERS[genderEnum];
+
+      const payload = buildStudentPayload({
+        ...watchedValues,
+        profile_image: profileImage,
+      });
+
+      payload.profile_image = profileImage;
+      payload.disable = true;
+
+      const { error } = await updateStudent(studentId, payload, {
+        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+      });
+
+      if (error) {
+        throw new Error(error.statusText || 'Failed to delete student');
+      }
+
+      toast.success('Student deleted successfully');
+      setIsDeleteModalOpen(false);
+      router.push('/dashboard/students');
+      router.refresh();
+    } catch {
+      toast.error('Failed to delete student');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto space-y-6">
@@ -370,6 +417,13 @@ export default function StudentDetailsPage() {
               Edit
             </Button>
           )}
+          <Button
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="bg-destructive text-white hover:bg-destructive/90"
+            disabled={isDeleting}
+          >
+            Delete
+          </Button>
         </div>
       </div>
 
@@ -944,6 +998,41 @@ export default function StudentDetailsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDeleteModal
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        title="Delete Student"
+        description="Are you sure you want to remove this admin? This action cannot be undone."
+        confirmLabel="Delete Student"
+        confirmDisabled={isDeleting}
+        confirmLoading={isDeleting}
+        onConfirm={handleDeleteStudent}
+      >
+        <div className="flex items-center gap-3">
+          <Avatar className="h-10 w-10">
+            <AvatarImage
+              src={imagePreview || watchedValues.profile_image || '/placeholder.svg'}
+              alt={watchedValues.full_name}
+            />
+            <AvatarFallback className="text-sm font-medium">
+              {watchedValues.full_name
+                ?.split(' ')
+                .map((n) => n[0])
+                .join('')
+                .toUpperCase() || 'ST'}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="font-medium">{watchedValues.full_name}</div>
+            <div className="text-sm text-muted-foreground">
+              {watchedValues.class_name
+                ? `${watchedValues.class_name} ${watchedValues.section_name ? `• ${watchedValues.section_name}` : ''}`
+                : 'No class assigned'}
+            </div>
+          </div>
+        </div>
+      </ConfirmDeleteModal>
     </div>
   );
 }

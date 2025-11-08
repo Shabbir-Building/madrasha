@@ -12,9 +12,11 @@ const StudentsPage = async () => {
 
   if (!response) return;
 
+  const students = response.docs.filter((student) => !student.disable);
+
   return (
     <main className="container mx-auto">
-      <StudentListTable columns={studentListTableColumns} data={response.docs} title="Students" />
+      <StudentListTable columns={studentListTableColumns} data={students} title="Students" />
     </main>
   );
 };

@@ -27,6 +27,10 @@ const adminSchema: Schema = new mongoose.Schema(
       type: Boolean,
       required: true,
     },
+    disable: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

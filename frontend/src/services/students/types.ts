@@ -11,6 +11,7 @@ export type Student = {
     name: string;
     phone: string;
   };
+  disable?: boolean;
 };
 
 export type StudentDetails = {
@@ -29,6 +30,7 @@ export type StudentDetails = {
   waiver_amount: number;
   current_location: string;
   permanent_location: string;
+  disable?: boolean;
   enrollment: {
     group: number;
     section?: number;
@@ -75,6 +77,9 @@ export type CreateStudentInput = {
   alternative_phone_number?: string | null;
   guardian_current_location: string;
   guardian_permanent_location: string;
+  disable?: boolean;
 };
 
-export type UpdateStudentInput = CreateStudentInput;
+export type UpdateStudentInput = CreateStudentInput & {
+  disable?: boolean;
+};

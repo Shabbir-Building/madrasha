@@ -82,6 +82,11 @@ export const getAdmins = async (req: Request, res: Response): Promise<void> => {
 
   const basePipeline = [
     {
+      $match: {
+        $or: [{ disable: { $exists: false } }, { disable: { $ne: true } }],
+      },
+    },
+    {
       $lookup: {
         from: "employees",
         localField: "employee_id",
@@ -109,6 +114,7 @@ export const getAdmins = async (req: Request, res: Response): Promise<void> => {
           createdAt: 1,
           access_boys_section: 1,
           access_girls_section: 1,
+          disable: 1,
         },
       },
       { $skip: skip },
@@ -193,7 +199,15 @@ export const deleteAdmin = async (
     throw new AppError("Invalid admin ID format", HttpStatus.BAD_REQUEST);
   }
 
-  const deleted = await Admin.findByIdAndDelete(id);
+  const deleted = await Admin.findByIdAndUpdate(
+    id,
+    {
+      $set: {
+        disable: true,
+      },
+    },
+    { new: true }
+  );
 
   if (!deleted) {
     throw new AppError("Admin not found", HttpStatus.NOT_FOUND);
