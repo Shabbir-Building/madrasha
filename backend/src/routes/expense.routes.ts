@@ -4,6 +4,7 @@ import {
   getExpenses,
   createExpense,
   updateExpense,
+  deleteExpense,
 } from "../controllers/expense.controller";
 import { validate } from "../middlewares/validation/validate";
 import {
@@ -23,5 +24,7 @@ router.post(
 );
 
 router.put("/:id", validate(updateExpenseSchema), asyncHandler(updateExpense));
+
+router.delete("/:id", asyncHandler(deleteExpense));
 
 export default router;

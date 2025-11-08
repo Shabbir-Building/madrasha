@@ -154,3 +154,34 @@ export const updateExpense = async (
 
   res.status(HttpStatus.OK).json(response);
 };
+
+export const deleteExpense = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const admin = res.locals.admin as AuthenticatedAdmin | undefined;
+
+  if (!admin?.sub) {
+    throw new AppError("Unauthorized", HttpStatus.UNAUTHORIZED);
+  }
+
+  const { id } = req.params as { id: string };
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new AppError("Invalid expense ID format", HttpStatus.BAD_REQUEST);
+  }
+
+  const deleted = await Expense.findByIdAndDelete(id);
+
+  if (!deleted) {
+    throw new AppError("Expense not found", HttpStatus.NOT_FOUND);
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    message: "Expense deleted successfully",
+    timestamp: new Date().toISOString(),
+  };
+
+  res.status(HttpStatus.OK).json(response);
+};

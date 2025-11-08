@@ -1,9 +1,10 @@
 'use client';
 
-import { ConfirmDeleteModal } from '@/components/modals/ConfirmDeleteModal';
 import { BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
 import { EXPENSE_TYPE_MAP } from '@/domain/expenses/constants';
 import type { Expense } from '@/services/expense/types';
+
+import { ConfirmDeleteModal } from '@/components/modals/ConfirmDeleteModal';
 
 type DeleteExpenseModalProps = {
   open: boolean;
@@ -30,8 +31,7 @@ export function DeleteExpenseModal({
   if (!expense) return null;
 
   const branchLabel = getBranchLabel(expense.branch);
-  const expenseType =
-    EXPENSE_TYPE_MAP[expense.type as keyof typeof EXPENSE_TYPE_MAP] ?? 'Unknown';
+  const expenseType = EXPENSE_TYPE_MAP[expense.type as keyof typeof EXPENSE_TYPE_MAP] ?? 'Unknown';
 
   return (
     <ConfirmDeleteModal
@@ -64,5 +64,3 @@ export function DeleteExpenseModal({
     </ConfirmDeleteModal>
   );
 }
-
-

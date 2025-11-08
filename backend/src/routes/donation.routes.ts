@@ -4,6 +4,7 @@ import {
   getDonations,
   createDonation,
   updateDonation,
+  deleteDonation,
 } from "../controllers/donation.controller";
 import { validate } from "../middlewares/validation/validate";
 import {
@@ -27,5 +28,7 @@ router.put(
   validate(updateDonationSchema),
   asyncHandler(updateDonation)
 );
+
+router.delete("/:id", asyncHandler(deleteDonation));
 
 export default router;
