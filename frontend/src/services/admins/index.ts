@@ -13,6 +13,7 @@ type AdminListItem = {
   createdAt: string;
   access_boys_section: boolean;
   access_girls_section: boolean;
+  disable?: boolean;
 };
 
 const getAdmins = async (fetchOptions?: FetchOptions, cacheConfig?: CacheConfig) => {

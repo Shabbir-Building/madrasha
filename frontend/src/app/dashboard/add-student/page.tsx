@@ -48,7 +48,10 @@ const studentFormSchema = z
     profile_image: z.string().optional(),
     full_name: z.string().min(1, 'Full name is required'),
     blood_group: z.string().min(1, 'Blood group is required'),
-    birth_certificate_no: z.string().min(1, 'Birth certificate number is required'),
+    birth_certificate_no: z
+      .string()
+      .min(1, 'Birth certificate number is required')
+      .min(17, 'Birth certificate number must be at least 17 characters long'),
     gender: z.string().min(1, 'Gender is required'),
     registration_date: z.string().min(1, 'Registration date is required'),
     section_name: z.string().min(1, 'Section is required'),

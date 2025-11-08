@@ -53,6 +53,7 @@ export type Admin = {
   phone: string;
   adminSince: string;
   avatar?: string;
+  disable?: boolean;
 };
 
 interface AdminListTableProps<TData, TValue> {
@@ -91,10 +92,10 @@ export function AdminListTable<TData, TValue>({
     setIsEditModalOpen(true);
   };
 
-  // const handleDeleteAdmin = (admin: Admin) => {
-  //   setSelectedAdmin(admin);
-  //   setIsDeleteModalOpen(true);
-  // };
+  const handleDeleteAdmin = (admin: Admin) => {
+    setSelectedAdmin(admin);
+    setIsDeleteModalOpen(true);
+  };
 
   const handleDeleteConfirm = async (admin: Admin) => {
     try {
@@ -141,12 +142,12 @@ export function AdminListTable<TData, TValue>({
                   <DropdownMenuItem onClick={() => handleEditAdmin(admin)}>
                     Edit admin
                   </DropdownMenuItem>
-                  {/* <DropdownMenuItem
+                  <DropdownMenuItem
                     className="text-destructive"
                     onClick={() => handleDeleteAdmin(admin)}
                   >
                     Delete admin
-                  </DropdownMenuItem> */}
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             );
@@ -322,7 +323,12 @@ export function AdminListTable<TData, TValue>({
       />
       <DeleteAdminModal
         open={isDeleteModalOpen}
-        onOpenChange={setIsDeleteModalOpen}
+        onOpenChange={(open) => {
+          setIsDeleteModalOpen(open);
+          if (!open) {
+            setSelectedAdmin(null);
+          }
+        }}
         admin={selectedAdmin}
         onConfirm={handleDeleteConfirm}
       />

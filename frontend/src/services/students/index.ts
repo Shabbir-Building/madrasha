@@ -15,7 +15,13 @@ const getStudents = async (fetchOptions?: FetchOptions, cacheConfig?: CacheConfi
     fetchOptions,
     cacheConfig,
   );
-  return response.data;
+  const data = response.data;
+  if (!data) return data;
+
+  return {
+    ...data,
+    docs: data.docs.filter((student) => !student.disable),
+  };
 };
 
 const getStudentById = async (id: string, fetchOptions?: FetchOptions) => {

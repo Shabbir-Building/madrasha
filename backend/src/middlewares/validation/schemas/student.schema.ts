@@ -77,6 +77,7 @@ export const createStudentSchema = z
       .min(1, "Guardian permanent location is required")
       .max(150, "Guardian permanent location must not exceed 150 characters"),
     total: z.number().min(0).optional(),
+    disable: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.residential && !data.residential_category) {

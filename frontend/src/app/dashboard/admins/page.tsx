@@ -12,19 +12,21 @@ const AdminsListPage = async () => {
     accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
   });
 
-  const admins = (response?.docs || []).map((a) => ({
-    id: a._id,
-    name: a.fullname,
-    type: ADMIN_ROLE_LABELS[a.role as AdminRole],
-    phone: a.phone_number,
-    access_boys_section: a.access_boys_section,
-    access_girls_section: a.access_girls_section,
-    adminSince: new Date(a.createdAt).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }),
-  }));
+  const admins = (response?.docs || [])
+    .filter((a) => !a.disable)
+    .map((a) => ({
+      id: a._id,
+      name: a.fullname,
+      type: ADMIN_ROLE_LABELS[a.role as AdminRole],
+      phone: a.phone_number,
+      access_boys_section: a.access_boys_section,
+      access_girls_section: a.access_girls_section,
+      adminSince: new Date(a.createdAt).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }),
+    }));
 
   return (
     <AdminListTable

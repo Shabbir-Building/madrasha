@@ -63,6 +63,8 @@ export function StudentListTable<TData, TValue>({
   const filteredData = React.useMemo(() => {
     let filtered = data as Student[];
 
+    filtered = filtered.filter((student) => !student.disable);
+
     if (nameSearch) {
       filtered = filtered.filter((student) =>
         student.fullname.toLowerCase().includes(nameSearch.toLowerCase()),

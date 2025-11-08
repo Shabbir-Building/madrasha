@@ -16,6 +16,7 @@ export type StudentDocument = Document & {
   waiver_amount?: number;
   current_location: string;
   permanent_location: string;
+  disable?: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -36,6 +37,7 @@ export type CreateStudentInput = {
   waiver_amount?: number;
   current_location: string;
   permanent_location: string;
+  disable?: boolean;
 };
 
 export type CreateStudentPayload = {
@@ -65,9 +67,12 @@ export type CreateStudentPayload = {
   alternative_phone_number?: string;
   guardian_current_location: string;
   guardian_permanent_location: string;
+  disable?: boolean;
 };
 
-export type UpdateStudentPayload = CreateStudentPayload;
+export type UpdateStudentPayload = CreateStudentPayload & {
+  disable?: boolean;
+};
 
 export type StudentEnrollmentDocument = Document & {
   student_id: Types.ObjectId;
@@ -124,6 +129,7 @@ export type StudentListItem = {
     name: string;
     phone: string;
   };
+  disable?: boolean;
 };
 
 export type StudentDetails = {
@@ -142,6 +148,7 @@ export type StudentDetails = {
   waiver_amount: number;
   current_location: string;
   permanent_location: string;
+  disable?: boolean;
   enrollment: {
     group: number;
     section?: number;

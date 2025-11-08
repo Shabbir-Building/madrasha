@@ -28,7 +28,14 @@ export const getStudents = async (
   const skip = (page - 1) * limit;
 
   // MongoDB aggregation pipeline to join Student, StudentEnrollment, and StudentGuardian
+  const activeMatchStage = {
+    $match: {
+      $or: [{ disable: { $exists: false } }, { disable: { $ne: true } }],
+    },
+  };
+
   const pipeline = [
+    activeMatchStage,
     {
       $lookup: {
         from: "studentenrollments",
@@ -87,6 +94,7 @@ export const getStudents = async (
           name: "$guardian_data.guardian_name",
           phone: "$guardian_data.phone_number",
         },
+        disable: 1,
       },
     },
     {
@@ -99,7 +107,7 @@ export const getStudents = async (
 
   const [students, totalResult] = await Promise.all([
     Student.aggregate(pipeline),
-    Student.countDocuments(),
+    Student.countDocuments(activeMatchStage.$match),
   ]);
 
   const pages = Math.ceil(totalResult / limit);
@@ -139,7 +147,10 @@ export const getStudentById = async (
   // MongoDB aggregation pipeline to join Student, StudentEnrollment, and StudentGuardian
   const pipeline = [
     {
-      $match: { _id: studentObjectId },
+      $match: {
+        _id: studentObjectId,
+        $or: [{ disable: { $exists: false } }, { disable: { $ne: true } }],
+      },
     },
     {
       $lookup: {
@@ -195,6 +206,7 @@ export const getStudentById = async (
         waiver_amount: 1,
         current_location: 1,
         permanent_location: 1,
+        disable: 1,
         enrollment: {
           group: "$latest_enrollment.group",
           section: "$latest_enrollment.section",
@@ -280,6 +292,7 @@ export const createStudent = async (
           waiver_amount: payload.waiver_amount ?? 0,
           current_location: payload.current_location,
           permanent_location: payload.permanent_location,
+          disable: payload.disable ?? false,
         },
       ],
       { session }
@@ -366,28 +379,34 @@ export const updateStudent = async (
       throw new AppError("Student not found", HttpStatus.NOT_FOUND);
     }
 
+    const studentUpdateData: Record<string, unknown> = {
+      branch: payload.branch,
+      fullname: payload.full_name,
+      profile_image: payload.profile_image,
+      blood_group: payload.blood_group,
+      gender: payload.gender,
+      birth_certificate_no: payload.birth_certificate_no,
+      registration_date: registrationDate,
+      is_residential: payload.residential,
+      residential_category: payload.residential
+        ? payload.residential_category
+        : undefined,
+      residential_fee: payload.residential ? payload.residential_fee ?? 0 : 0,
+      is_day_care: payload.day_care,
+      waiver_amount: payload.waiver_amount ?? 0,
+      current_location: payload.current_location,
+      permanent_location: payload.permanent_location,
+    };
+
+    if (typeof payload.disable === "boolean") {
+      studentUpdateData.disable = payload.disable;
+    }
+
     await Student.updateOne(
       { _id: studentObjectId },
       {
         $set: {
-          branch: payload.branch,
-          fullname: payload.full_name,
-          profile_image: payload.profile_image,
-          blood_group: payload.blood_group,
-          gender: payload.gender,
-          birth_certificate_no: payload.birth_certificate_no,
-          registration_date: registrationDate,
-          is_residential: payload.residential,
-          residential_category: payload.residential
-            ? payload.residential_category
-            : undefined,
-          residential_fee: payload.residential
-            ? payload.residential_fee ?? 0
-            : 0,
-          is_day_care: payload.day_care,
-          waiver_amount: payload.waiver_amount ?? 0,
-          current_location: payload.current_location,
-          permanent_location: payload.permanent_location,
+          ...studentUpdateData,
         },
       },
       { session }
