@@ -11,14 +11,18 @@ import {
 import type { CreateEmployeeInput, UpdateEmployeeInput } from './types';
 
 const getEmployees = async (fetchOptions?: FetchOptions, cacheConfig?: CacheConfig) => {
-  console.log('getEmployees');
   const response = await serverGet<PaginationResult<Employee>>(
     '/employees',
     fetchOptions,
     cacheConfig,
   );
-  console.log('server Get', response);
-  return response.data;
+  const data = response.data;
+  if (!data) return data;
+
+  return {
+    ...data,
+    docs: data.docs.filter((employee) => !employee.disable),
+  };
 };
 
 export { getEmployees };

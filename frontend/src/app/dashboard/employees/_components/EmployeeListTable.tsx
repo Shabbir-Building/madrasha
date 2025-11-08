@@ -81,6 +81,8 @@ export function EmployeeListTable<TData, TValue>({
   const filteredData = React.useMemo(() => {
     let filtered = data as Employee[];
 
+    filtered = filtered.filter((employee) => !employee.disable);
+
     if (nameSearch) {
       filtered = filtered.filter((employee) =>
         employee.fullname.toLowerCase().includes(nameSearch.toLowerCase()),

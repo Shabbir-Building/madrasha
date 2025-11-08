@@ -83,7 +83,10 @@ export const getEmployees = async (
 
   const skip = (page - 1) * limit;
 
-  const filter = { phone_number: { $ne: PHONE_NUMBER_TO_EXCLUDE } };
+  const filter = {
+    phone_number: { $ne: PHONE_NUMBER_TO_EXCLUDE },
+    $or: [{ disable: { $exists: false } }, { disable: { $ne: true } }],
+  };
 
   const [employees, total] = await Promise.all([
     Employee.find(filter)
@@ -128,7 +131,10 @@ export const getEmployeeById = async (
     throw new AppError("Invalid employee ID format", HttpStatus.BAD_REQUEST);
   }
 
-  const employee = await Employee.findById(id).lean();
+  const employee = await Employee.findOne({
+    _id: id,
+    $or: [{ disable: { $exists: false } }, { disable: { $ne: true } }],
+  }).lean();
 
   if (!employee) {
     throw new AppError("Employee not found", HttpStatus.NOT_FOUND);
@@ -192,6 +198,9 @@ export const updateEmployee = async (
     updateObject.current_location = updateData.current_location;
   if (updateData.permanent_location !== undefined)
     updateObject.permanent_location = updateData.permanent_location;
+  if (typeof updateData.disable === "boolean") {
+    updateObject.disable = updateData.disable;
+  }
 
   // Handle date conversions
   if (updateData.join_date !== undefined) {

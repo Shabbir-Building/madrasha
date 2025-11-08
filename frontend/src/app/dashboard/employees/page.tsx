@@ -12,8 +12,10 @@ const EmployesPage = async () => {
 
   if (!response) return;
 
+  const employees = response.docs.filter((employee) => !employee.disable);
+
   return (
-    <EmployeeListTable columns={employeeListTableColumns} data={response.docs} title="Employees" />
+    <EmployeeListTable columns={employeeListTableColumns} data={employees} title="Employees" />
   );
 };
 

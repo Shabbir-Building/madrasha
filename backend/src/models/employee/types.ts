@@ -15,6 +15,7 @@ export type EmployeeDocument = Document & {
   bonus: number;
   current_location: string;
   permanent_location: string;
+  disable?: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -34,6 +35,7 @@ export type CreateEmployeeInput = {
   bonus?: number;
   current_location: string;
   permanent_location: string;
+  disable?: boolean;
 };
 
 export type EmployeeListItem = {
@@ -62,6 +64,7 @@ export type EmployeeDetails = {
   bonus: number;
   current_location: string;
   permanent_location: string;
+  disable?: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -81,4 +84,5 @@ export type UpdateEmployeeInput = {
   bonus?: number;
   current_location?: string;
   permanent_location?: string;
+  disable?: boolean;
 };
