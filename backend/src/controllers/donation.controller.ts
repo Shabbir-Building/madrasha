@@ -168,3 +168,34 @@ export const updateDonation = async (
 
   res.status(HttpStatus.OK).json(response);
 };
+
+export const deleteDonation = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const admin = res.locals.admin as AuthenticatedAdmin | undefined;
+
+  if (!admin?.sub) {
+    throw new AppError("Unauthorized", HttpStatus.UNAUTHORIZED);
+  }
+
+  const { id } = req.params as { id: string };
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new AppError("Invalid donation ID format", HttpStatus.BAD_REQUEST);
+  }
+
+  const deleted = await Donation.findByIdAndDelete(id);
+
+  if (!deleted) {
+    throw new AppError("Donation not found", HttpStatus.NOT_FOUND);
+  }
+
+  const response: ApiResponse = {
+    success: true,
+    message: "Donation deleted successfully",
+    timestamp: new Date().toISOString(),
+  };
+
+  res.status(HttpStatus.OK).json(response);
+};
