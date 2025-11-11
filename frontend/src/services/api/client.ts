@@ -34,7 +34,7 @@ const publicGet = async <T, E = unknown>(endpoint: string, fetchOptions?: FetchO
     ...restOptions,
   } as BetterFetchOption);
   if (shouldThrow && error) throw error;
-  console.log('publicGet response', { data: data?.data, error });
+
   return { data: data?.data, error };
 };
 

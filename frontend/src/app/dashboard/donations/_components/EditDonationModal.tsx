@@ -1,5 +1,6 @@
 'use client';
 
+import { BRANCH_MAP, BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
 import {
   DONATION_TYPE_MAP,
   DONATION_TYPE_REVERSE_MAP,
@@ -31,9 +32,16 @@ import {
 
 import type { Donation } from './DonationListTable';
 
+const branchOptions: BranchLabel[] = ['Boys', 'Girls'];
 const donationTypeOptions: DonationTypeLabel[] = ['Sadaqah', 'Zakat', 'Membership', 'Others'];
 
 const donationSchema = z.object({
+  branch: z
+    .string()
+    .min(1, 'Please select a branch')
+    .refine((val) => branchOptions.includes(val as BranchLabel), {
+      message: 'Please select a valid branch',
+    }),
   fullname: z.string().min(1, 'Donor name is required').max(100, 'Name too long'),
   phone_number: z.string().min(1, 'Phone number is required').max(15, 'Phone number too long'),
   donation_type: z
@@ -80,13 +88,21 @@ export function EditDonationModal({ open, onOpenChange, donation }: EditDonation
       donation_date: '',
       donation_amount: 0,
       notes: '',
+      branch: '',
     },
   });
 
+  const watchedBranch = watch('branch');
   const watchedType = watch('donation_type');
 
   useEffect(() => {
     if (donation) {
+      const branchLabel = BRANCH_MAP[donation.branch as keyof typeof BRANCH_MAP] ?? '';
+      if (branchLabel && branchOptions.includes(branchLabel as BranchLabel)) {
+        setValue('branch', branchLabel as BranchLabel);
+      } else {
+        setValue('branch', '');
+      }
       setValue('fullname', donation.fullname);
       setValue('phone_number', donation.phone_number);
       const typeLabel = DONATION_TYPE_MAP[donation.donation_type as keyof typeof DONATION_TYPE_MAP];
@@ -103,10 +119,12 @@ export function EditDonationModal({ open, onOpenChange, donation }: EditDonation
     setIsSubmitting(true);
     try {
       const donationTypeValue = DONATION_TYPE_REVERSE_MAP[data.donation_type as DonationTypeLabel];
+      const branchValue = BRANCH_REVERSE_MAP[data.branch as BranchLabel];
 
       await updateDonation(
         donation._id,
         {
+          branch: branchValue,
           fullname: data.fullname,
           phone_number: data.phone_number,
           donation_type: donationTypeValue,
@@ -145,6 +163,29 @@ export function EditDonationModal({ open, onOpenChange, donation }: EditDonation
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Branch */}
+          <div className="space-y-2">
+            <Label htmlFor="branch">Branch</Label>
+            <Select
+              value={watchedBranch}
+              onValueChange={(value) => {
+                setValue('branch', value as BranchLabel);
+                trigger('branch');
+              }}
+            >
+              <SelectTrigger className={errors.branch ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select branch" />
+              </SelectTrigger>
+              <SelectContent>
+                {branchOptions.map((branch) => (
+                  <SelectItem key={branch} value={branch}>
+                    {branch}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.branch && <p className="text-sm text-red-500">{errors.branch.message}</p>}
+          </div>
           {/* Donor Name */}
           <div className="space-y-2">
             <Label htmlFor="fullname">Donor Name</Label>

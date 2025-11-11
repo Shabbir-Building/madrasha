@@ -27,7 +27,7 @@ export const getDonations = async (
   const [donations, total] = await Promise.all([
     Donation.find()
       .select(
-        "_id donation_type fullname phone_number donation_amount donation_date notes admin_id createdAt updatedAt"
+        "_id branch donation_type fullname phone_number donation_amount donation_date notes admin_id createdAt updatedAt"
       )
       .populate({
         path: "admin_id",
@@ -77,6 +77,7 @@ export const createDonation = async (
   }
 
   const {
+    branch,
     donation_type,
     fullname,
     phone_number,
@@ -94,6 +95,7 @@ export const createDonation = async (
 
   await Donation.create({
     admin_id: adminObjectId,
+    branch,
     donation_type,
     fullname,
     phone_number,
@@ -128,6 +130,7 @@ export const updateDonation = async (
   }
 
   const {
+    branch,
     donation_type,
     fullname,
     phone_number,
@@ -145,6 +148,7 @@ export const updateDonation = async (
     id,
     {
       $set: {
+        branch,
         donation_type,
         fullname,
         phone_number,

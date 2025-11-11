@@ -9,6 +9,7 @@ const dateStringSchema = z
   }, "Invalid date format");
 
 export const createDonationSchema = z.object({
+  branch: z.number().int().min(1, "Branch is required"),
   donation_type: z
     .number()
     .int()

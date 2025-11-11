@@ -1,5 +1,6 @@
 'use client';
 
+import { BRANCH_MAP, BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
 import {
   DONATION_TYPE_MAP,
   DONATION_TYPE_REVERSE_MAP,
@@ -52,6 +53,7 @@ import { EditDonationModal } from './EditDonationModal';
 export type Donation = ApiDonation;
 
 const donationTypeOptions: DonationTypeLabel[] = ['Sadaqah', 'Zakat', 'Membership', 'Others'];
+const branchOptions: BranchLabel[] = ['Boys', 'Girls'];
 
 const badgeVariantByDonationType: Record<
   DonationTypeLabel,
@@ -86,6 +88,7 @@ export function DonationListTable<TData, TValue>({
 
   // Search and filter states
   const [nameSearch, setNameSearch] = React.useState<string>('');
+  const [branchFilter, setBranchFilter] = React.useState<BranchLabel | ''>('');
   const [typeFilter, setTypeFilter] = React.useState<DonationTypeLabel | ''>('');
   const [monthFilter, setMonthFilter] = React.useState<string>('');
   const [yearFilter, setYearFilter] = React.useState<string>('');
@@ -132,13 +135,18 @@ export function DonationListTable<TData, TValue>({
       );
     }
 
+    if (branchFilter) {
+      const branchValue =
+        BRANCH_REVERSE_MAP[branchFilter as keyof typeof BRANCH_REVERSE_MAP] ?? undefined;
+      if (branchValue !== undefined) {
+        filtered = filtered.filter((donation) => donation.branch === branchValue);
+      }
+    }
+
     if (typeFilter) {
       const typeValue = DONATION_TYPE_REVERSE_MAP[typeFilter];
       filtered = filtered.filter((donation) => donation.donation_type === typeValue);
     }
-
-    // Note: Branch filtering removed as backend doesn't have branch field
-    // If needed, this would require backend schema update
 
     if (monthFilter) {
       filtered = filtered.filter((donation) => {
@@ -156,7 +164,7 @@ export function DonationListTable<TData, TValue>({
     }
 
     return filtered as TData[];
-  }, [data, nameSearch, typeFilter, monthFilter, yearFilter]);
+  }, [data, nameSearch, branchFilter, typeFilter, monthFilter, yearFilter]);
 
   // Calculate total amount from filtered data
   const totalAmount = React.useMemo(() => {
@@ -254,6 +262,31 @@ export function DonationListTable<TData, TValue>({
               className="h-9 w-64"
             />
           </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-9 px-3 bg-transparent">
+                {branchFilter || 'Branch'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuCheckboxItem
+                checked={!branchFilter}
+                onCheckedChange={() => setBranchFilter('')}
+              >
+                All Branches
+              </DropdownMenuCheckboxItem>
+              {branchOptions.map((branch) => (
+                <DropdownMenuCheckboxItem
+                  key={branch}
+                  checked={branchFilter === branch}
+                  onCheckedChange={() => setBranchFilter(branchFilter === branch ? '' : branch)}
+                >
+                  {branch}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -458,6 +491,15 @@ export const donationListTableColumns: ColumnDef<Donation>[] = [
       const typeLabel = DONATION_TYPE_MAP[typeValue as keyof typeof DONATION_TYPE_MAP];
       const variant = badgeVariantByDonationType[typeLabel] ?? 'outline';
       return <Badge variant={variant}>{typeLabel}</Badge>;
+    },
+  },
+  {
+    accessorKey: 'branch',
+    header: 'Branch',
+    cell: ({ row }) => {
+      const branchValue = row.getValue('branch') as number;
+      const branchLabel = BRANCH_MAP[branchValue as keyof typeof BRANCH_MAP] ?? 'N/A';
+      return <div className="text-sm">{branchLabel}</div>;
     },
   },
   {
