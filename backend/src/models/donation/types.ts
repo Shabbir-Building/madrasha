@@ -2,6 +2,7 @@ import { type Document, type Types } from "mongoose";
 
 export type DonationDocument = Document & {
   admin_id: Types.ObjectId;
+  branch: number;
   donation_type: number;
   fullname: string;
   phone_number: string;
@@ -14,6 +15,7 @@ export type DonationDocument = Document & {
 
 export type DonationListItem = {
   _id: string;
+  branch: number;
   donation_type: number;
   fullname: string;
   phone_number: string;
@@ -32,6 +34,7 @@ export type DonationListItem = {
 };
 
 export type CreateDonationInput = {
+  branch: number;
   donation_type: number;
   fullname: string;
   phone_number: string;

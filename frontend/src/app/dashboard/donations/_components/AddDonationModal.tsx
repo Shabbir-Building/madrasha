@@ -1,5 +1,6 @@
 'use client';
 
+import { BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
 import { DONATION_TYPE_REVERSE_MAP, type DonationTypeLabel } from '@/domain/donations/constants';
 import { getTodayDate } from '@/lib/date-utils';
 import { createDonation } from '@/services/donation';
@@ -26,10 +27,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+const branchOptions: BranchLabel[] = ['Boys', 'Girls'];
 const donationTypeOptions: DonationTypeLabel[] = ['Sadaqah', 'Zakat', 'Membership', 'Others'];
 
 // Zod validation schema
 const donationSchema = z.object({
+  branch: z
+    .string()
+    .min(1, 'Please select a branch')
+    .refine((val) => branchOptions.includes(val as BranchLabel), {
+      message: 'Please select a valid branch',
+    }),
   fullname: z.string().min(1, 'Donor name is required').max(100, 'Name too long'),
   phone_number: z.string().min(1, 'Phone number is required').max(15, 'Phone number too long'),
   donation_type: z
@@ -75,18 +83,22 @@ export function AddDonationModal({ open, onOpenChange }: AddDonationModalProps) 
       donation_date: getTodayDate(),
       donation_amount: 0,
       notes: '',
+      branch: '',
     },
   });
 
+  const watchedBranch = watch('branch');
   const watchedType = watch('donation_type');
 
   const onSubmit = async (data: DonationFormData) => {
     setIsSubmitting(true);
     try {
+      const branchValue = BRANCH_REVERSE_MAP[data.branch as BranchLabel];
       const donationTypeValue = DONATION_TYPE_REVERSE_MAP[data.donation_type as DonationTypeLabel];
 
       await createDonation(
         {
+          branch: branchValue,
           fullname: data.fullname,
           phone_number: data.phone_number,
           donation_type: donationTypeValue,
@@ -124,6 +136,29 @@ export function AddDonationModal({ open, onOpenChange }: AddDonationModalProps) 
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Branch */}
+          <div className="space-y-2">
+            <Label htmlFor="branch">Branch</Label>
+            <Select
+              value={watchedBranch}
+              onValueChange={(value) => {
+                setValue('branch', value as BranchLabel);
+                trigger('branch');
+              }}
+            >
+              <SelectTrigger className={errors.branch ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select branch" />
+              </SelectTrigger>
+              <SelectContent>
+                {branchOptions.map((branch) => (
+                  <SelectItem key={branch} value={branch}>
+                    {branch}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.branch && <p className="text-sm text-red-500">{errors.branch.message}</p>}
+          </div>
           {/* Donor Name */}
           <div className="space-y-2">
             <Label htmlFor="fullname">Donor Name</Label>

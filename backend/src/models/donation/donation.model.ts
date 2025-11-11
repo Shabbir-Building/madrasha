@@ -7,6 +7,11 @@ const donationSchema: Schema = new mongoose.Schema(
       required: true,
       ref: "Admin",
     },
+    branch: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
     donation_type: {
       type: Number,
       required: true,

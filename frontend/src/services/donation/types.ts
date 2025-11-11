@@ -1,5 +1,6 @@
 export type Donation = {
   _id: string;
+  branch: number;
   donation_type: number;
   fullname: string;
   phone_number: string;
@@ -18,6 +19,7 @@ export type Donation = {
 };
 
 export type CreateDonationInput = {
+  branch: number;
   donation_type: number;
   fullname: string;
   phone_number: string;
