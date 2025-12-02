@@ -8,9 +8,9 @@ export enum StudentSection {
 export enum StudentGroup {
   NONE = 0,
   IBTIDAIYYAH = 1,
-  THANAWIYYAH_ULYA = 2,
-  ALIMIYYAH = 3,
-  MUTAWASSITAH = 4,
+  MUTAWASSITAH = 2,
+  THANAWIYYAH_ULYA = 3,
+  ALIMIYYAH = 4,
 }
 
 export enum StudentClass {

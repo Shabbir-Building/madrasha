@@ -57,18 +57,42 @@ const getYearDateRanges = () => {
   };
 };
 
+const parseBranchQuery = (value: unknown): number | undefined => {
+  if (value == null) {
+    return undefined;
+  }
+
+  if (typeof value === "string" && value.toLowerCase() === "all") {
+    return undefined;
+  }
+
+  const parsed =
+    typeof value === "number" && Number.isFinite(value)
+      ? value
+      : Number.parseInt(String(value), 10);
+
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return undefined;
+  }
+
+  return parsed;
+};
+
 export const getOverviewStats = async (
-  _req: Request,
+  req: Request,
   res: Response
 ): Promise<void> => {
   const { currentYearStart, currentYearEnd } = getYearDateRanges();
-
+  const branchParam = parseBranchQuery(req.query.branch);
+  const branchFilter =
+    branchParam != null ? { branch: branchParam } : undefined;
   // Get current year totals
   const [currentIncome, currentDonations, currentExpense] = await Promise.all([
     Income.aggregate([
       {
         $match: {
           income_date: { $gte: currentYearStart, $lte: currentYearEnd },
+          ...(branchFilter ?? {}),
         },
       },
       { $group: { _id: null, total: { $sum: "$amount" } } },
@@ -77,6 +101,7 @@ export const getOverviewStats = async (
       {
         $match: {
           donation_date: { $gte: currentYearStart, $lte: currentYearEnd },
+          ...(branchFilter ?? {}),
         },
       },
       { $group: { _id: null, total: { $sum: "$donation_amount" } } },
@@ -85,6 +110,7 @@ export const getOverviewStats = async (
       {
         $match: {
           expense_date: { $gte: currentYearStart, $lte: currentYearEnd },
+          ...(branchFilter ?? {}),
         },
       },
       { $group: { _id: null, total: { $sum: "$amount" } } },
@@ -114,18 +140,22 @@ export const getOverviewStats = async (
 };
 
 export const getIncomeExpenseComparison = async (
-  _req: Request,
+  req: Request,
   res: Response
 ): Promise<void> => {
   const currentYear = new Date().getFullYear();
   const yearStart = new Date(currentYear, 0, 1);
   const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
+  const branchParam = parseBranchQuery(req.query.branch);
+  const branchFilter =
+    branchParam != null ? { branch: branchParam } : undefined;
 
   // Aggregate income by month
   const incomeByMonth = await Income.aggregate([
     {
       $match: {
         income_date: { $gte: yearStart, $lte: yearEnd },
+        ...(branchFilter ?? {}),
       },
     },
     {
@@ -141,6 +171,7 @@ export const getIncomeExpenseComparison = async (
     {
       $match: {
         expense_date: { $gte: yearStart, $lte: yearEnd },
+        ...(branchFilter ?? {}),
       },
     },
     {
@@ -185,12 +216,16 @@ export const getDonationsByMonth = async (
   const currentYear = new Date().getFullYear();
   const yearStart = new Date(currentYear, 0, 1);
   const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
-
+  const branchParam = parseBranchQuery(_req.query.branch);
+  console.log("branchParam", branchParam);
+  const branchFilter =
+    branchParam != null ? { branch: branchParam } : undefined;
   // Aggregate donations by month and type
   const donationsByMonth = await Donation.aggregate([
     {
       $match: {
         donation_date: { $gte: yearStart, $lte: yearEnd },
+        ...(branchFilter ?? {}),
       },
     },
     {

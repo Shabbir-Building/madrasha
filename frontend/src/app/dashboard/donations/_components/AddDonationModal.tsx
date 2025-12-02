@@ -1,6 +1,7 @@
 'use client';
 
-import { BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
+import { Branch } from '@/domain/branches/enums';
+import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import { DONATION_TYPE_REVERSE_MAP, type DonationTypeLabel } from '@/domain/donations/constants';
 import { getTodayDate } from '@/lib/date-utils';
 import { createDonation } from '@/services/donation';
@@ -27,17 +28,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const branchOptions: BranchLabel[] = ['Boys', 'Girls'];
-const donationTypeOptions: DonationTypeLabel[] = ['Sadaqah', 'Zakat', 'Membership', 'Others'];
+const branchOptions: Branch[] = [Branch.BOYS, Branch.GIRLS];
+const donationTypeOptions = Object.keys(DONATION_TYPE_REVERSE_MAP) as DonationTypeLabel[];
 
 // Zod validation schema
 const donationSchema = z.object({
-  branch: z
-    .string()
-    .min(1, 'Please select a branch')
-    .refine((val) => branchOptions.includes(val as BranchLabel), {
-      message: 'Please select a valid branch',
-    }),
+  branch: z.nativeEnum(Branch),
   fullname: z.string().min(1, 'Donor name is required').max(100, 'Name too long'),
   phone_number: z.string().min(1, 'Phone number is required').max(15, 'Phone number too long'),
   donation_type: z
@@ -83,7 +79,6 @@ export function AddDonationModal({ open, onOpenChange }: AddDonationModalProps) 
       donation_date: getTodayDate(),
       donation_amount: 0,
       notes: '',
-      branch: '',
     },
   });
 
@@ -93,12 +88,11 @@ export function AddDonationModal({ open, onOpenChange }: AddDonationModalProps) 
   const onSubmit = async (data: DonationFormData) => {
     setIsSubmitting(true);
     try {
-      const branchValue = BRANCH_REVERSE_MAP[data.branch as BranchLabel];
       const donationTypeValue = DONATION_TYPE_REVERSE_MAP[data.donation_type as DonationTypeLabel];
 
       await createDonation(
         {
-          branch: branchValue,
+          branch: data.branch,
           fullname: data.fullname,
           phone_number: data.phone_number,
           donation_type: donationTypeValue,
@@ -140,9 +134,9 @@ export function AddDonationModal({ open, onOpenChange }: AddDonationModalProps) 
           <div className="space-y-2">
             <Label htmlFor="branch">Branch</Label>
             <Select
-              value={watchedBranch}
+              value={watchedBranch !== undefined ? String(watchedBranch) : undefined}
               onValueChange={(value) => {
-                setValue('branch', value as BranchLabel);
+                setValue('branch', Number(value) as Branch);
                 trigger('branch');
               }}
             >
@@ -151,13 +145,17 @@ export function AddDonationModal({ open, onOpenChange }: AddDonationModalProps) 
               </SelectTrigger>
               <SelectContent>
                 {branchOptions.map((branch) => (
-                  <SelectItem key={branch} value={branch}>
-                    {branch}
+                  <SelectItem key={branch} value={String(branch)}>
+                    {BRANCH_LABELS[branch]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.branch && <p className="text-sm text-red-500">{errors.branch.message}</p>}
+            {errors.branch && (
+              <p className="text-sm text-red-500">
+                {errors.branch.message ?? 'Please select a branch'}
+              </p>
+            )}
           </div>
           {/* Donor Name */}
           <div className="space-y-2">

@@ -10,7 +10,6 @@ const donationSchema: Schema = new mongoose.Schema(
     branch: {
       type: Number,
       required: true,
-      min: 1,
     },
     donation_type: {
       type: Number,
