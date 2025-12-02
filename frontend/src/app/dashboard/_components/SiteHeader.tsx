@@ -1,10 +1,11 @@
 'use client';
 
+import { BRANCH_MAP } from '@/domain/branches/constants';
 import { getCurrentYear } from '@/lib/date-utils';
 
 import { useState } from 'react';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -18,8 +19,18 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { ThemeToggle } from './ThemeToggle';
 
+type BranchFilterValue = 'all' | 'boys' | 'girls';
+
+const branchLabels: Record<BranchFilterValue, string> = {
+  all: BRANCH_MAP[1],
+  boys: BRANCH_MAP[2],
+  girls: BRANCH_MAP[3],
+};
+
 export function SiteHeader() {
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const isOverviewPage = pathname === '/dashboard/overview';
 
   // Generate year options (current year and previous 5 years)
@@ -27,15 +38,34 @@ export function SiteHeader() {
   const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
   // State for selected year (default to current year)
-  const [selectedYear, setSelectedYear] = useState<number | 'all'>(currentYear);
+  const [selectedYear, setSelectedYear] = useState<number | 'all-years'>(currentYear);
 
-  const handleYearChange = (year: number | 'all') => {
+  const branchParam = searchParams.get('branch');
+  const selectedBranch: BranchFilterValue =
+    branchParam === 'boys' || branchParam === 'girls' ? branchParam : 'all';
+
+  const handleYearChange = (year: number | 'all-years') => {
     setSelectedYear(year);
   };
 
-  const getDisplayText = () => {
-    return selectedYear === 'all' ? 'All Years' : selectedYear.toString();
+  const handleBranchChange = (branch: BranchFilterValue) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (branch === 'all') {
+      params.delete('branch');
+    } else {
+      params.set('branch', branch);
+    }
+
+    const paramsString = params.toString();
+    const nextPath = paramsString ? `${pathname}?${paramsString}` : pathname;
+    router.replace(nextPath, { scroll: false });
   };
+
+  const getDisplayText = () => {
+    return selectedYear === 'all-years' ? 'All Years' : selectedYear.toString();
+  };
+
+  const getBranchDisplayText = () => branchLabels[selectedBranch];
 
   return (
     <header className="sticky top-0 z-10 bg-background rounded-t-xl flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
@@ -67,6 +97,35 @@ export function SiteHeader() {
                     {year}
                   </DropdownMenuCheckboxItem>
                 ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {isOverviewPage && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="h-8 px-3 bg-transparent">
+                  {getBranchDisplayText()}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuCheckboxItem
+                  checked={selectedBranch === 'all'}
+                  onCheckedChange={() => handleBranchChange('all')}
+                >
+                  {branchLabels.all}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={selectedBranch === 'boys'}
+                  onCheckedChange={() => handleBranchChange('boys')}
+                >
+                  {branchLabels.boys}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={selectedBranch === 'girls'}
+                  onCheckedChange={() => handleBranchChange('girls')}
+                >
+                  {branchLabels.girls}
+                </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}

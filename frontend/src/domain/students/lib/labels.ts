@@ -22,9 +22,9 @@ export const STUDENT_SECTION_LABELS: Record<StudentSection, string> = {
 export const STUDENT_GROUP_LABELS: Record<StudentGroup, string> = {
   [StudentGroup.NONE]: 'No group',
   [StudentGroup.IBTIDAIYYAH]: "Ibtida'iyyah",
+  [StudentGroup.MUTAWASSITAH]: 'Mutawassitah',
   [StudentGroup.THANAWIYYAH_ULYA]: "Thanawiyyah 'Ulyā",
   [StudentGroup.ALIMIYYAH]: 'Ālimiyyah',
-  [StudentGroup.MUTAWASSITAH]: 'Mutawassitah',
 };
 
 export const STUDENT_CLASS_LABELS: Record<StudentClass, string> = {

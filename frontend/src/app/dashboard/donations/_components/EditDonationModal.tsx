@@ -1,6 +1,8 @@
 'use client';
 
 import { BRANCH_MAP, BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
+import { Branch } from '@/domain/branches/enums';
+import { BRANCH_LABELS, parseBranchLabel } from '@/domain/branches/lib/labels';
 import {
   DONATION_TYPE_MAP,
   DONATION_TYPE_REVERSE_MAP,
@@ -32,16 +34,11 @@ import {
 
 import type { Donation } from './DonationListTable';
 
-const branchOptions: BranchLabel[] = ['Boys', 'Girls'];
-const donationTypeOptions: DonationTypeLabel[] = ['Sadaqah', 'Zakat', 'Membership', 'Others'];
+const branchOptions: Branch[] = [Branch.BOYS, Branch.GIRLS];
+const donationTypeOptions = Object.keys(DONATION_TYPE_REVERSE_MAP) as DonationTypeLabel[];
 
 const donationSchema = z.object({
-  branch: z
-    .string()
-    .min(1, 'Please select a branch')
-    .refine((val) => branchOptions.includes(val as BranchLabel), {
-      message: 'Please select a valid branch',
-    }),
+  branch: z.nativeEnum(Branch),
   fullname: z.string().min(1, 'Donor name is required').max(100, 'Name too long'),
   phone_number: z.string().min(1, 'Phone number is required').max(15, 'Phone number too long'),
   donation_type: z
@@ -88,7 +85,6 @@ export function EditDonationModal({ open, onOpenChange, donation }: EditDonation
       donation_date: '',
       donation_amount: 0,
       notes: '',
-      branch: '',
     },
   });
 
@@ -97,11 +93,10 @@ export function EditDonationModal({ open, onOpenChange, donation }: EditDonation
 
   useEffect(() => {
     if (donation) {
-      const branchLabel = BRANCH_MAP[donation.branch as keyof typeof BRANCH_MAP] ?? '';
-      if (branchLabel && branchOptions.includes(branchLabel as BranchLabel)) {
-        setValue('branch', branchLabel as BranchLabel);
-      } else {
-        setValue('branch', '');
+      const branchLabel = BRANCH_MAP[donation.branch as keyof typeof BRANCH_MAP];
+      const branchValue = branchLabel ? parseBranchLabel(branchLabel) : null;
+      if (branchValue !== null) {
+        setValue('branch', branchValue);
       }
       setValue('fullname', donation.fullname);
       setValue('phone_number', donation.phone_number);
@@ -119,7 +114,8 @@ export function EditDonationModal({ open, onOpenChange, donation }: EditDonation
     setIsSubmitting(true);
     try {
       const donationTypeValue = DONATION_TYPE_REVERSE_MAP[data.donation_type as DonationTypeLabel];
-      const branchValue = BRANCH_REVERSE_MAP[data.branch as BranchLabel];
+      const branchLabel = BRANCH_LABELS[data.branch] as BranchLabel;
+      const branchValue = BRANCH_REVERSE_MAP[branchLabel];
 
       await updateDonation(
         donation._id,
@@ -167,9 +163,9 @@ export function EditDonationModal({ open, onOpenChange, donation }: EditDonation
           <div className="space-y-2">
             <Label htmlFor="branch">Branch</Label>
             <Select
-              value={watchedBranch}
+              value={watchedBranch !== undefined ? String(watchedBranch) : undefined}
               onValueChange={(value) => {
-                setValue('branch', value as BranchLabel);
+                setValue('branch', Number(value) as Branch);
                 trigger('branch');
               }}
             >
@@ -178,13 +174,17 @@ export function EditDonationModal({ open, onOpenChange, donation }: EditDonation
               </SelectTrigger>
               <SelectContent>
                 {branchOptions.map((branch) => (
-                  <SelectItem key={branch} value={branch}>
-                    {branch}
+                  <SelectItem key={branch} value={String(branch)}>
+                    {BRANCH_LABELS[branch]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.branch && <p className="text-sm text-red-500">{errors.branch.message}</p>}
+            {errors.branch && (
+              <p className="text-sm text-red-500">
+                {errors.branch.message ?? 'Please select a branch'}
+              </p>
+            )}
           </div>
           {/* Donor Name */}
           <div className="space-y-2">

@@ -1,3 +1,4 @@
+import type { Branch } from '@/domain/branches/enums';
 import { getOverviewStats } from '@/services/analytics';
 import { TrendingUp } from 'lucide-react';
 
@@ -13,10 +14,14 @@ import {
 
 type SectionCardsProps = {
   accessToken?: string;
+  branch?: Branch;
 };
 
-export async function SectionCards({ accessToken }: SectionCardsProps) {
-  const stats = await getOverviewStats({ accessToken });
+export async function SectionCards({ accessToken, branch }: SectionCardsProps) {
+  const stats = await getOverviewStats({
+    accessToken,
+    ...(branch != null ? { query: { branch: String(branch) } } : {}),
+  });
 
   if (!stats) {
     return null;

@@ -1,6 +1,6 @@
 'use client';
 
-import { BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
+import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import { EXPENSE_TYPE_REVERSE_MAP, type ExpenseTypeLabel } from '@/domain/expenses/constants';
 import { getTodayDate } from '@/lib/date-utils';
 import { createExpense } from '@/services/expense';
@@ -27,7 +27,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const branchOptions: BranchLabel[] = ['Boys', 'Girls'];
 const expenseTypeOptions: ExpenseTypeLabel[] = [
   'Salary',
   'Hostel',
@@ -43,12 +42,7 @@ const expenseTypeOptions: ExpenseTypeLabel[] = [
 
 // Zod validation schema
 const expenseSchema = z.object({
-  branch: z
-    .string()
-    .min(1, 'Please select a branch')
-    .refine((val) => branchOptions.includes(val as BranchLabel), {
-      message: 'Please select a valid branch',
-    }),
+  branch: z.number().min(1, 'Please select a branch'),
   type: z
     .string()
     .min(1, 'Please select an expense type')
@@ -76,7 +70,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
   const { data: session } = useSession();
 
   const createDefaultValues = (): ExpenseFormData => ({
-    branch: '',
+    branch: 0,
     type: '',
     notes: '',
     expense_date: getTodayDate(),
@@ -97,12 +91,11 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
   const onSubmit = async (data: ExpenseFormData) => {
     setIsSubmitting(true);
     try {
-      const branchValue = BRANCH_REVERSE_MAP[data.branch as BranchLabel];
       const typeValue = EXPENSE_TYPE_REVERSE_MAP[data.type as ExpenseTypeLabel];
-
+      console.log(data);
       await createExpense(
         {
-          branch: branchValue,
+          branch: data.branch,
           type: typeValue,
           amount: data.amount,
           expense_date: data.expense_date,
@@ -147,14 +140,17 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
                 name="branch"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value && field.value !== 0 ? field.value.toString() : undefined}
+                    onValueChange={(val) => field.onChange(Number.parseInt(val))}
+                  >
                     <SelectTrigger className={errors.branch ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Select branch" />
+                      <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
-                      {branchOptions.map((branch) => (
-                        <SelectItem key={branch} value={branch}>
-                          {branch}
+                      {Object.entries(BRANCH_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
                         </SelectItem>
                       ))}
                     </SelectContent>
