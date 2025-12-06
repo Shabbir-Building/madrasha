@@ -8,15 +8,17 @@ import { IncomeExpenseChartBar } from './_components/IncomeExpenseChartBar';
 import { SectionCards } from './_components/SectionCards';
 
 type OverviewPageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const OverviewPage = async ({ searchParams }: OverviewPageProps) => {
   const session = await getServerSession(authOptions);
   const accessToken = (session as typeof session & { accessToken?: string })?.accessToken;
 
+  const resolvedSearchParams = await searchParams;
+
   const branchParam = (() => {
-    const param = searchParams?.branch;
+    const param = resolvedSearchParams?.branch;
     if (Array.isArray(param)) return param[0];
     return param;
   })();
