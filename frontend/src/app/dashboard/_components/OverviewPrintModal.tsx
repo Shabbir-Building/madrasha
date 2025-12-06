@@ -11,7 +11,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -79,9 +78,9 @@ export function OverviewPrintModal({
               Select the year and month for the report you want to print.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <label htmlFor="print-year" className="text-sm font-medium">
+          <div className="flex flex-row gap-8">
+            <div>
+              <label htmlFor="print-year" className="text-sm font-medium block mb-3">
                 Year
               </label>
               <Select value={printYear} onValueChange={setPrintYear}>
@@ -97,8 +96,8 @@ export function OverviewPrintModal({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
-              <label htmlFor="print-month" className="text-sm font-medium">
+            <div>
+              <label htmlFor="print-month" className="text-sm font-medium block mb-3">
                 Month
               </label>
               <Select value={printMonth} onValueChange={setPrintMonth}>
@@ -114,13 +113,13 @@ export function OverviewPrintModal({
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-end flex-1 justify-end">
+              <Button onClick={handlePrint} disabled={isGenerating}>
+                <PrinterIcon className="h-4 w-4 mr-2" />
+                {isGenerating ? 'Generating...' : 'Print'}
+              </Button>
+            </div>
           </div>
-          <DialogFooter>
-            <Button onClick={handlePrint} disabled={isGenerating}>
-              <PrinterIcon className="h-4 w-4 mr-2" />
-              {isGenerating ? 'Generating...' : 'Print'}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
