@@ -16,7 +16,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { PrinterIcon } from 'lucide-react';
 
+import { OverviewPrintModal } from '@/app/dashboard/_components/OverviewPrintModal';
 import { ThemeToggle } from './ThemeToggle';
 
 type BranchFilterValue = 'all' | 'boys' | 'girls';
@@ -40,6 +42,10 @@ export function SiteHeader() {
   // State for selected year (default to current year)
   const [selectedYear, setSelectedYear] = useState<number | 'all-years'>(currentYear);
 
+  // State for print modal
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const currentMonth = new Date().getMonth() + 1; // 1-12
+
   const branchParam = searchParams.get('branch');
   const selectedBranch: BranchFilterValue =
     branchParam === 'boys' || branchParam === 'girls' ? branchParam : 'all';
@@ -59,6 +65,11 @@ export function SiteHeader() {
     const paramsString = params.toString();
     const nextPath = paramsString ? `${pathname}?${paramsString}` : pathname;
     router.replace(nextPath, { scroll: false });
+  };
+
+  const handlePrint = (year: string, month: string) => {
+    // TODO: Implement print functionality
+    console.log('Print:', { year, month });
   };
 
   const getDisplayText = () => {
@@ -128,6 +139,26 @@ export function SiteHeader() {
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+          {isOverviewPage && (
+            <>
+              <Button
+                variant="outline"
+                className="h-8 px-3 bg-transparent"
+                onClick={() => setIsPrintModalOpen(true)}
+              >
+                <PrinterIcon className="h-4 w-4" />
+                Print
+              </Button>
+              <OverviewPrintModal
+                open={isPrintModalOpen}
+                onOpenChange={setIsPrintModalOpen}
+                yearOptions={yearOptions}
+                defaultYear={currentYear}
+                defaultMonth={currentMonth}
+                onPrint={handlePrint}
+              />
+            </>
           )}
           <ThemeToggle />
         </div>
