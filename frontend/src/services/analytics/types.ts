@@ -18,3 +18,11 @@ export type MonthlyDonations = {
   membership: number;
   others: number;
 };
+
+export type DailyOverviewData = {
+  date: string; // ISO format "YYYY-MM-DD"
+  income: number;
+  donation: number;
+  expense: number;
+  balance: number;
+};

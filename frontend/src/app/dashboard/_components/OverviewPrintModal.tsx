@@ -2,8 +2,11 @@
 
 import { printOverviewPDF } from '@/lib/pdf/generateOverviewPDF';
 import { cn } from '@/lib/utils';
+import { getReportOverview } from '@/services/analytics';
 import { format } from 'date-fns';
 import { CalendarIcon, PrinterIcon } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
 import { useState } from 'react';
 
@@ -18,8 +21,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-
-import { generateDummyRangeData } from './dummy-data';
 
 type PrintModalProps = {
   open: boolean;
@@ -37,6 +38,7 @@ export function OverviewPrintModal({
   defaultMonth,
   onPrint,
 }: PrintModalProps) {
+  const { data: session } = useSession();
   const [startDate, setStartDate] = useState<Date | undefined>(
     new Date(defaultYear, defaultMonth - 1, 1),
   );
@@ -51,20 +53,33 @@ export function OverviewPrintModal({
     try {
       setIsGenerating(true);
 
-      // Generate dummy data for the selected date range
-      const data = generateDummyRangeData(startDate, endDate);
+      // Format dates for API call
+      const startDateStr = format(startDate, 'yyyy-MM-dd');
+      const endDateStr = format(endDate, 'yyyy-MM-dd');
+
+      // Fetch real data for the selected date range
+      const data = await getReportOverview(startDateStr, endDateStr, {
+        accessToken: (session as any)?.accessToken,
+      });
+
+      if (!data || data.length === 0) {
+        toast.error('No data found for the selected range.');
+        setIsGenerating(false);
+        return;
+      }
 
       // Call the optional onPrint callback
       onPrint?.(startDate, endDate);
 
       // Generate and print the PDF document
-      printOverviewPDF(startDate, endDate, data);
+      printOverviewPDF(startDate, endDate, data as any);
 
       // Close selection modal
       onOpenChange(false);
       setIsGenerating(false);
     } catch (error) {
       console.error('Error printing:', error);
+      toast.error('Failed to fetch report data. Please try again.');
       setIsGenerating(false);
     }
   };

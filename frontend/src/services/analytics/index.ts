@@ -1,6 +1,11 @@
 import { type CacheConfig, type FetchOptions, serverGet } from '@/services/api';
 
-import type { MonthlyDonations, MonthlyIncomeExpense, OverviewStats } from './types';
+import type {
+  DailyOverviewData,
+  MonthlyDonations,
+  MonthlyIncomeExpense,
+  OverviewStats,
+} from './types';
 
 const getOverviewStats = async (fetchOptions?: FetchOptions, cacheConfig?: CacheConfig) => {
   const response = await serverGet<OverviewStats>(
@@ -32,4 +37,18 @@ const getDonationsByMonth = async (fetchOptions?: FetchOptions, cacheConfig?: Ca
   return response.data;
 };
 
-export { getOverviewStats, getIncomeExpenseComparison, getDonationsByMonth };
+const getReportOverview = async (
+  startDate: string,
+  endDate: string,
+  fetchOptions?: FetchOptions,
+  cacheConfig?: CacheConfig,
+) => {
+  const response = await serverGet<DailyOverviewData[]>(
+    `/analytics/report-overview?startDate=${startDate}&endDate=${endDate}`,
+    fetchOptions,
+    cacheConfig,
+  );
+  return response.data;
+};
+
+export { getOverviewStats, getIncomeExpenseComparison, getDonationsByMonth, getReportOverview };
