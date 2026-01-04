@@ -1,18 +1,19 @@
+import type { DailyOverviewData } from '@/app/dashboard/_components/dummy-data';
 import dayjs from 'dayjs';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-import type { DailyOverviewData } from '@/app/dashboard/_components/dummy-data';
-
-export function generateOverviewPDF(year: string, month: string, data: DailyOverviewData[]) {
+export function generateOverviewPDF(startDate: Date, endDate: Date, data: DailyOverviewData[]) {
   // Create new PDF document
   const doc = new jsPDF();
 
-  // Get month name
-  const monthName = dayjs(`${year}-${month}-01`).format('MMMM');
+  // Format date range for subtitle
+  const startStr = dayjs(startDate).format('D-MMM-YYYY');
+  const endStr = dayjs(endDate).format('D-MMM-YYYY');
+  const rangeStr = `${startStr} to ${endStr}`;
 
   const pageWidth = doc.internal.pageSize.getWidth();
-  
+
   // Add printing date at top right
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
@@ -20,7 +21,7 @@ export function generateOverviewPDF(year: string, month: string, data: DailyOver
   const printDateText = `Print Date: ${printDate}`;
   const printDateWidth = doc.getTextWidth(printDateText);
   doc.text(printDateText, pageWidth - printDateWidth - 10, 15);
-  
+
   // Add main title
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
@@ -31,7 +32,7 @@ export function generateOverviewPDF(year: string, month: string, data: DailyOver
   // Add subtitle
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  const subtitle = `Monthly Total Overview - ${monthName} ${year}`;
+  const subtitle = `Report Overview - ${rangeStr}`;
   const subtitleWidth = doc.getTextWidth(subtitle);
   doc.text(subtitle, (pageWidth - subtitleWidth) / 2, 22);
 
@@ -66,7 +67,9 @@ export function generateOverviewPDF(year: string, month: string, data: DailyOver
 
   // Generate table
   autoTable(doc, {
-    head: [['Sr. No.', 'Date', 'Total Income', 'Total Donations', 'Total Expense', 'Current Balance']],
+    head: [
+      ['Sr. No.', 'Date', 'Total Income', 'Total Donations', 'Total Expense', 'Current Balance'],
+    ],
     body: tableData,
     startY: 28,
     theme: 'grid',
@@ -118,31 +121,32 @@ export function generateOverviewPDF(year: string, month: string, data: DailyOver
   return doc;
 }
 
-export function printOverviewPDF(year: string, month: string, data: DailyOverviewData[]) {
+export function printOverviewPDF(startDate: Date, endDate: Date, data: DailyOverviewData[]) {
   // Generate the PDF document
-  const doc = generateOverviewPDF(year, month, data);
-  
-  // Get month name for filename
-  const monthName = dayjs(`${year}-${month}-01`).format('MMMM');
-  const fileName = `overview-${monthName.toLowerCase()}-${year}.pdf`;
-  
+  const doc = generateOverviewPDF(startDate, endDate, data);
+
+  // Format range for filename
+  const startFile = dayjs(startDate).format('YYYYMMDD');
+  const endFile = dayjs(endDate).format('YYYYMMDD');
+  const fileName = `overview-${startFile}-to-${endFile}.pdf`;
+
   // Set PDF metadata
   doc.setProperties({
-    title: `Monthly Overview - ${monthName} ${year}`,
-    subject: `Monthly Total Overview for ${monthName} ${year}`,
+    title: `Report Overview - ${dayjs(startDate).format('D-MMM-YYYY')} to ${dayjs(endDate).format('D-MMM-YYYY')}`,
+    subject: `Report Overview for the selected range`,
     author: 'Habrul Ummah Model Madrasah',
     creator: 'Habrul Ummah Model Madrasah',
   });
-  
+
   // Get the PDF as a blob
   const pdfBlob = doc.output('blob');
-  
+
   // Create a File object with the proper filename
   const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-  
+
   // Create a blob URL from the File
   const blobUrl = URL.createObjectURL(pdfFile);
-  
+
   // Create a hidden iframe for printing
   const iframe = document.createElement('iframe');
   iframe.style.position = 'fixed';
@@ -152,13 +156,13 @@ export function printOverviewPDF(year: string, month: string, data: DailyOvervie
   iframe.style.height = '0';
   iframe.style.border = 'none';
   iframe.title = fileName; // Set iframe title to filename
-  
+
   // Add iframe to document
   document.body.appendChild(iframe);
-  
+
   // Set the iframe source to the PDF blob URL
   iframe.src = blobUrl;
-  
+
   // Cleanup function
   const cleanup = () => {
     try {
@@ -170,44 +174,43 @@ export function printOverviewPDF(year: string, month: string, data: DailyOvervie
       console.error('Error during cleanup:', error);
     }
   };
-  
+
   // Wait for iframe to load, then trigger print
   iframe.onload = () => {
     try {
       const iframeWindow = iframe.contentWindow;
-      
+
       if (!iframeWindow) {
         cleanup();
         return;
       }
-      
+
       // Listen for afterprint event to cleanup after printing
       iframeWindow.addEventListener('afterprint', () => {
         cleanup();
       });
-      
+
       // Fallback: cleanup after 10 minutes if afterprint doesn't fire
       const fallbackTimeout = setTimeout(() => {
         cleanup();
       }, 600000); // 10 minutes
-      
+
       // Focus the iframe and trigger print
       iframeWindow.focus();
       iframeWindow.print();
-      
+
       // If print is cancelled immediately, cleanup
       setTimeout(() => {
         if (!document.body.contains(iframe)) {
           clearTimeout(fallbackTimeout);
         }
       }, 100);
-      
     } catch (error) {
       console.error('Error printing:', error);
       cleanup();
     }
   };
-  
+
   // Error handler
   iframe.onerror = () => {
     console.error('Error loading PDF in iframe');

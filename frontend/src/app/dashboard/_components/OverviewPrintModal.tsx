@@ -1,12 +1,14 @@
 'use client';
 
-import { MONTH_OPTIONS } from '@/lib/constants';
 import { printOverviewPDF } from '@/lib/pdf/generateOverviewPDF';
-import { PrinterIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { CalendarIcon, PrinterIcon } from 'lucide-react';
 
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -15,15 +17,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
-import { generateDummyMonthData } from './dummy-data';
+import { generateDummyRangeData } from './dummy-data';
 
 type PrintModalProps = {
   open: boolean;
@@ -31,33 +27,38 @@ type PrintModalProps = {
   yearOptions: number[];
   defaultYear: number;
   defaultMonth: number;
-  onPrint?: (year: string, month: string) => void;
+  onPrint?: (startDate: Date, endDate: Date) => void;
 };
 
 export function OverviewPrintModal({
   open,
   onOpenChange,
-  yearOptions,
   defaultYear,
   defaultMonth,
   onPrint,
 }: PrintModalProps) {
-  const [printYear, setPrintYear] = useState<string>(defaultYear.toString());
-  const [printMonth, setPrintMonth] = useState<string>(defaultMonth.toString());
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    new Date(defaultYear, defaultMonth - 1, 1),
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(new Date(defaultYear, defaultMonth, 0));
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isStartPopoverOpen, setIsStartPopoverOpen] = useState(false);
+  const [isEndPopoverOpen, setIsEndPopoverOpen] = useState(false);
 
   const handlePrint = async () => {
+    if (!startDate || !endDate) return;
+
     try {
       setIsGenerating(true);
 
-      // Generate dummy data for the selected month and year
-      const data = generateDummyMonthData(parseInt(printYear), parseInt(printMonth));
+      // Generate dummy data for the selected date range
+      const data = generateDummyRangeData(startDate, endDate);
 
       // Call the optional onPrint callback
-      onPrint?.(printYear, printMonth);
+      onPrint?.(startDate, endDate);
 
       // Generate and print the PDF document
-      printOverviewPDF(printYear, printMonth, data);
+      printOverviewPDF(startDate, endDate, data);
 
       // Close selection modal
       onOpenChange(false);
@@ -71,54 +72,76 @@ export function OverviewPrintModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Print Report</DialogTitle>
             <DialogDescription>
-              Select the year and month for the report you want to print.
+              Select the start and end date for the report you want to print.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-row gap-8">
-            <div>
-              <label htmlFor="print-year" className="text-sm font-medium block mb-3">
-                Year
-              </label>
-              <Select value={printYear} onValueChange={setPrintYear}>
-                <SelectTrigger id="print-year">
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Start Date</label>
+              <Popover open={isStartPopoverOpen} onOpenChange={setIsStartPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={'outline'}
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !startDate && 'text-muted-foreground',
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, 'PPP') : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => {
+                      setStartDate(date);
+                      setIsStartPopoverOpen(false);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-            <div>
-              <label htmlFor="print-month" className="text-sm font-medium block mb-3">
-                Month
-              </label>
-              <Select value={printMonth} onValueChange={setPrintMonth}>
-                <SelectTrigger id="print-month">
-                  <SelectValue placeholder="Select month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTH_OPTIONS.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">End Date</label>
+              <Popover open={isEndPopoverOpen} onOpenChange={setIsEndPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={'outline'}
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !endDate && 'text-muted-foreground',
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, 'PPP') : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => {
+                      setEndDate(date);
+                      setIsEndPopoverOpen(false);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-            <div className="flex items-end flex-1 justify-end">
-              <Button onClick={handlePrint} disabled={isGenerating}>
-                <PrinterIcon className="h-4 w-4 mr-2" />
-                {isGenerating ? 'Generating...' : 'Print'}
-              </Button>
-            </div>
+          </div>
+          <div className="flex justify-end pt-4">
+            <Button onClick={handlePrint} disabled={isGenerating || !startDate || !endDate}>
+              <PrinterIcon className="h-4 w-4 mr-2" />
+              {isGenerating ? 'Generating...' : 'Print'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

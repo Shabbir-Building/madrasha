@@ -1,7 +1,9 @@
 'use client';
 
+import { OverviewPrintModal } from '@/app/dashboard/_components/OverviewPrintModal';
 import { BRANCH_MAP } from '@/domain/branches/constants';
 import { getCurrentYear } from '@/lib/date-utils';
+import { PrinterIcon } from 'lucide-react';
 
 import { useState } from 'react';
 
@@ -16,9 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { PrinterIcon } from 'lucide-react';
 
-import { OverviewPrintModal } from '@/app/dashboard/_components/OverviewPrintModal';
 import { ThemeToggle } from './ThemeToggle';
 
 type BranchFilterValue = 'all' | 'boys' | 'girls';
@@ -67,9 +67,9 @@ export function SiteHeader() {
     router.replace(nextPath, { scroll: false });
   };
 
-  const handlePrint = (year: string, month: string) => {
-    // TODO: Implement print functionality
-    console.log('Print:', { year, month });
+  const handlePrint = (startDate: Date, endDate: Date) => {
+    // TODO: Implement additional print logic if needed
+    console.log('Print:', { startDate, endDate });
   };
 
   const getDisplayText = () => {
