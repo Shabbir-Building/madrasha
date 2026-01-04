@@ -9,7 +9,7 @@ export type DailyOverviewData = {
 // Generate dummy data for a given date range
 export function generateDummyRangeData(startDate: Date, endDate: Date): DailyOverviewData[] {
   const data: DailyOverviewData[] = [];
-  let current = new Date(startDate);
+  const current = new Date(startDate);
   let runningBalance = 0;
 
   while (current <= endDate) {
