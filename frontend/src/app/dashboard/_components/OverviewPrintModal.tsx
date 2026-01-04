@@ -59,7 +59,7 @@ export function OverviewPrintModal({
 
       // Fetch real data for the selected date range
       const data = await getReportOverview(startDateStr, endDateStr, {
-        accessToken: (session as any)?.accessToken,
+        accessToken: session?.accessToken,
       });
 
       if (!data || data.length === 0) {
@@ -72,7 +72,7 @@ export function OverviewPrintModal({
       onPrint?.(startDate, endDate);
 
       // Generate and print the PDF document
-      printOverviewPDF(startDate, endDate, data as any);
+      printOverviewPDF(startDate, endDate, data);
 
       // Close selection modal
       onOpenChange(false);
