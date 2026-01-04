@@ -277,3 +277,116 @@ export const getDonationsByMonth = async (
 
   res.status(HttpStatus.OK).json(response);
 };
+
+export const getReportOverview = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { startDate, endDate } = req.query;
+  const branchParam = parseBranchQuery(req.query.branch);
+
+  if (!startDate || !endDate) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      success: false,
+      message: "startDate and endDate are required",
+    });
+    return;
+  }
+
+  const start = new Date(startDate as string);
+  const end = new Date(endDate as string);
+  end.setHours(23, 59, 59, 999); // Set to end of day
+
+  const branchFilter =
+    branchParam != null ? { branch: branchParam } : undefined;
+
+  // Aggregate by day
+  const [incomeByDay, donationsByDay, expensesByDay] = await Promise.all([
+    Income.aggregate([
+      {
+        $match: {
+          income_date: { $gte: start, $lte: end },
+          ...(branchFilter ?? {}),
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$income_date" } },
+          total: { $sum: "$amount" },
+        },
+      },
+    ]),
+    Donation.aggregate([
+      {
+        $match: {
+          donation_date: { $gte: start, $lte: end },
+          ...(branchFilter ?? {}),
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$donation_date" },
+          },
+          total: { $sum: "$donation_amount" },
+        },
+      },
+    ]),
+    Expense.aggregate([
+      {
+        $match: {
+          expense_date: { $gte: start, $lte: end },
+          ...(branchFilter ?? {}),
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$expense_date" } },
+          total: { $sum: "$amount" },
+        },
+      },
+    ]),
+  ]);
+
+  // Create lookup maps
+  const incomeMap = new Map(incomeByDay.map((item) => [item._id, item.total]));
+  const donationMap = new Map(
+    donationsByDay.map((item) => [item._id, item.total])
+  );
+  const expenseMap = new Map(
+    expensesByDay.map((item) => [item._id, item.total])
+  );
+
+  // Generate continuous date range
+  const reportData = [];
+  let runningBalance = 0;
+  const current = new Date(start);
+
+  while (current <= end) {
+    const dateStr = current.toISOString().split("T")[0];
+    const income = incomeMap.get(dateStr) || 0;
+    const donation = donationMap.get(dateStr) || 0;
+    const expense = expenseMap.get(dateStr) || 0;
+
+    runningBalance = runningBalance + income + donation - expense;
+
+    reportData.push({
+      date: dateStr,
+      income,
+      donation,
+      expense,
+      balance: runningBalance,
+    });
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  const response: ApiResponse<any[]> = {
+    success: true,
+    message: "Report overview data retrieved successfully",
+    data: reportData,
+    timestamp: new Date().toISOString(),
+  };
+
+  res.status(HttpStatus.OK).json(response);
+};

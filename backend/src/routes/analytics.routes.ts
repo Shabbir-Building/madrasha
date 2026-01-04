@@ -4,6 +4,7 @@ import {
   getOverviewStats,
   getIncomeExpenseComparison,
   getDonationsByMonth,
+  getReportOverview,
 } from "../controllers/analytics.controller";
 import { asyncHandler } from "../utils/asyncHandler";
 
@@ -17,5 +18,7 @@ router.get(
 );
 
 router.get("/donations-by-month", asyncHandler(getDonationsByMonth));
+
+router.get("/report-overview", asyncHandler(getReportOverview));
 
 export default router;
