@@ -1,5 +1,9 @@
 'use client';
 
+import {
+  ExpensePrintModal,
+  ExpensePrintModalTrigger,
+} from '@/app/dashboard/_components/ExpensePrintModal';
 import { BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
 import {
   EXPENSE_TYPE_MAP,
@@ -76,6 +80,7 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false);
   const [selectedExpense, setSelectedExpense] = React.useState<Expense | null>(null);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -364,6 +369,11 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <ExpensePrintModalTrigger
+            className="h-9 px-3"
+            onClick={() => setIsPrintModalOpen(true)}
+          />
+
           <Button className="h-9 px-3" onClick={() => setIsModalOpen(true)}>
             <Plus className="h-4 w-4" />
             Add Expense
@@ -462,6 +472,12 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
         expense={selectedExpense}
         onConfirm={handleDeleteConfirm}
         confirmLoading={isDeleting}
+      />
+      <ExpensePrintModal
+        open={isPrintModalOpen}
+        onOpenChange={setIsPrintModalOpen}
+        defaultYear={currentYear}
+        defaultMonth={new Date().getMonth() + 1}
       />
     </div>
   );

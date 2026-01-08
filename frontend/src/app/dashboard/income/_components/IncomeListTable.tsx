@@ -1,5 +1,9 @@
 'use client';
 
+import {
+  IncomePrintModal,
+  IncomePrintModalTrigger,
+} from '@/app/dashboard/_components/IncomePrintModal';
 import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import { INCOME_TYPE_LABELS, IncomeType as IncomeTypeEnum } from '@/domain/income';
 import { formatDate, getCurrentYear } from '@/lib/date-utils';
@@ -63,6 +67,7 @@ export function IncomeListTable<TData, TValue>({
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false);
   const [selectedIncome, setSelectedIncome] = React.useState<Income | null>(null);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -351,6 +356,8 @@ export function IncomeListTable<TData, TValue>({
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <IncomePrintModalTrigger className="h-9 px-3" onClick={() => setIsPrintModalOpen(true)} />
+
           <Button className="h-9 px-3" onClick={() => setIsModalOpen(true)}>
             <Plus className="h-4 w-4" />
             Add Income
@@ -449,6 +456,12 @@ export function IncomeListTable<TData, TValue>({
         income={selectedIncome}
         onConfirm={handleDeleteConfirm}
         confirmLoading={isDeleting}
+      />
+      <IncomePrintModal
+        open={isPrintModalOpen}
+        onOpenChange={setIsPrintModalOpen}
+        defaultYear={currentYear}
+        defaultMonth={new Date().getMonth() + 1}
       />
     </div>
   );
