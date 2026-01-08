@@ -2,6 +2,8 @@ import { type CacheConfig, type FetchOptions, serverGet } from '@/services/api';
 
 import type {
   DailyOverviewData,
+  ExpenseReportItem,
+  IncomeReportItem,
   MonthlyDonations,
   MonthlyIncomeExpense,
   OverviewStats,
@@ -51,4 +53,38 @@ const getReportOverview = async (
   return response.data;
 };
 
-export { getOverviewStats, getIncomeExpenseComparison, getDonationsByMonth, getReportOverview };
+const getIncomeReport = async (
+  startDate: string,
+  endDate: string,
+  fetchOptions?: FetchOptions,
+  cacheConfig?: CacheConfig,
+) => {
+  const response = await serverGet<IncomeReportItem[]>(
+    `/analytics/income-report?startDate=${startDate}&endDate=${endDate}`,
+    fetchOptions,
+    cacheConfig,
+  );
+  return response.data;
+};
+
+export {
+  getOverviewStats,
+  getIncomeExpenseComparison,
+  getDonationsByMonth,
+  getReportOverview,
+  getIncomeReport,
+};
+
+export const getExpenseReport = async (
+  startDate: string,
+  endDate: string,
+  fetchOptions?: FetchOptions,
+  cacheConfig?: CacheConfig,
+) => {
+  const response = await serverGet<ExpenseReportItem[]>(
+    `/analytics/expense-report?startDate=${startDate}&endDate=${endDate}`,
+    fetchOptions,
+    cacheConfig,
+  );
+  return response.data;
+};

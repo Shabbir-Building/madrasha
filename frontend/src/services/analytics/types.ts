@@ -26,3 +26,26 @@ export type DailyOverviewData = {
   expense: number;
   balance: number;
 };
+
+export type IncomeReportItem = {
+  date: string;
+  admissionFee: number;
+  sessionFee: number;
+  monthlyFee: number;
+  canteen: number;
+  others: number;
+};
+
+export type ExpenseReportItem = {
+  date: string;
+  salary: number;
+  hostel: number;
+  electricBill: number;
+  mobileInternetBill: number;
+  office: number;
+  stationery: number;
+  utilities: number;
+  fare: number;
+  maintenance: number;
+  construction: number;
+};
