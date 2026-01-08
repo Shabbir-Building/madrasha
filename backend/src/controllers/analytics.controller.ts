@@ -42,6 +42,29 @@ const MONTH_NAMES = [
   "December",
 ];
 
+type IncomeReportItem = {
+  date: string;
+  admissionFee: number;
+  sessionFee: number;
+  monthlyFee: number;
+  canteen: number;
+  others: number;
+};
+
+type ExpenseReportItem = {
+  date: string;
+  salary: number;
+  hostel: number;
+  electricBill: number;
+  mobileInternetBill: number;
+  office: number;
+  stationery: number;
+  utilities: number;
+  fare: number;
+  maintenance: number;
+  construction: number;
+};
+
 // Helper function to get date range for current year
 // const getYearDateRanges = () => {
 //   const now = new Date();
@@ -384,6 +407,175 @@ export const getReportOverview = async (
   const response: ApiResponse<any[]> = {
     success: true,
     message: "Report overview data retrieved successfully",
+    data: reportData,
+    timestamp: new Date().toISOString(),
+  };
+
+  res.status(HttpStatus.OK).json(response);
+};
+
+export const getIncomeReport = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { startDate, endDate } = req.query;
+  const branchParam = parseBranchQuery(req.query.branch);
+
+  if (!startDate || !endDate) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      success: false,
+      message: "startDate and endDate are required",
+    });
+    return;
+  }
+
+  const start = new Date(startDate as string);
+  const end = new Date(endDate as string);
+  end.setHours(23, 59, 59, 999);
+
+  const branchFilter =
+    branchParam != null ? { branch: branchParam } : undefined;
+
+  const incomeByCategory = await Income.aggregate([
+    {
+      $match: {
+        income_date: { $gte: start, $lte: end },
+        ...(branchFilter ?? {}),
+      },
+    },
+    {
+      $group: {
+        _id: {
+          date: { $dateToString: { format: "%Y-%m-%d", date: "$income_date" } },
+          type: "$type",
+        },
+        total: { $sum: "$amount" },
+      },
+    },
+  ]);
+
+  const reportMap = new Map<string, Record<number, number>>();
+
+  for (const item of incomeByCategory) {
+    const dateStr = item._id.date;
+    const type = item._id.type;
+    const total = item.total;
+
+    if (!reportMap.has(dateStr)) {
+      reportMap.set(dateStr, {});
+    }
+    reportMap.get(dateStr)![type] = total;
+  }
+
+  const reportData = [];
+  const current = new Date(start);
+
+  while (current <= end) {
+    const dateStr = current.toISOString().split("T")[0];
+    const categories = reportMap.get(dateStr) || {};
+
+    reportData.push({
+      date: dateStr,
+      admissionFee: categories[1] || 0,
+      sessionFee: categories[2] || 0,
+      monthlyFee: categories[3] || 0,
+      canteen: categories[4] || 0,
+      others: categories[5] || 0,
+    });
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  const response: ApiResponse<IncomeReportItem[]> = {
+    success: true,
+    message: "Income report data retrieved successfully",
+    data: reportData,
+    timestamp: new Date().toISOString(),
+  };
+
+  res.status(HttpStatus.OK).json(response);
+};
+
+export const getExpenseReport = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { startDate, endDate } = req.query;
+  const branchParam = parseBranchQuery(req.query.branch);
+
+  if (!startDate || !endDate) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      success: false,
+      message: "startDate and endDate are required",
+    });
+    return;
+  }
+
+  const start = new Date(startDate as string);
+  const end = new Date(endDate as string);
+  end.setHours(23, 59, 59, 999);
+
+  const branchFilter =
+    branchParam != null ? { branch: branchParam } : undefined;
+
+  const expenseByCategory = await Expense.aggregate([
+    {
+      $match: {
+        expense_date: { $gte: start, $lte: end },
+        ...(branchFilter ?? {}),
+      },
+    },
+    {
+      $group: {
+        _id: {
+          date: { $dateToString: { format: "%Y-%m-%d", date: "$expense_date" } },
+          type: "$type",
+        },
+        total: { $sum: "$amount" },
+      },
+    },
+  ]);
+
+  const reportMap = new Map<string, Record<number, number>>();
+
+  for (const item of expenseByCategory) {
+    const dateStr = item._id.date;
+    const type = item._id.type;
+    const total = item.total;
+
+    if (!reportMap.has(dateStr)) {
+      reportMap.set(dateStr, {});
+    }
+    reportMap.get(dateStr)![type] = total;
+  }
+
+  const reportData: ExpenseReportItem[] = [];
+  const current = new Date(start);
+
+  while (current <= end) {
+    const dateStr = current.toISOString().split("T")[0];
+    const categories = reportMap.get(dateStr) || {};
+
+    reportData.push({
+      date: dateStr,
+      salary: categories[1] || 0,
+      hostel: categories[2] || 0,
+      electricBill: categories[3] || 0,
+      mobileInternetBill: categories[4] || 0,
+      office: categories[5] || 0,
+      stationery: categories[6] || 0,
+      utilities: categories[7] || 0,
+      fare: categories[8] || 0,
+      maintenance: categories[9] || 0,
+      construction: categories[10] || 0,
+    });
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  const response: ApiResponse<ExpenseReportItem[]> = {
+    success: true,
+    message: "Expense report data retrieved successfully",
     data: reportData,
     timestamp: new Date().toISOString(),
   };
