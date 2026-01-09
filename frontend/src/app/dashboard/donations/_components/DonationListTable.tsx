@@ -18,7 +18,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { MoreHorizontal, Plus } from 'lucide-react';
+import { MoreHorizontal, Plus, PrinterIcon } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
@@ -26,6 +26,7 @@ import * as React from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { DonationPrintModal } from '@/app/dashboard/_components/DonationPrintModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -81,6 +82,7 @@ export function DonationListTable<TData, TValue>({
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false);
   const [selectedDonation, setSelectedDonation] = React.useState<Donation | null>(null);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -366,6 +368,15 @@ export function DonationListTable<TData, TValue>({
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <Button
+            variant="outline"
+            className="h-9 px-3"
+            onClick={() => setIsPrintModalOpen(true)}
+          >
+            <PrinterIcon className="h-4 w-4" />
+            Print
+          </Button>
+
           <Button className="h-9 px-3" onClick={() => setIsModalOpen(true)}>
             <Plus className="h-4 w-4" />
             Add Donation
@@ -464,6 +475,12 @@ export function DonationListTable<TData, TValue>({
         donation={selectedDonation}
         onConfirm={handleDeleteConfirm}
         confirmLoading={isDeleting}
+      />
+      <DonationPrintModal
+        open={isPrintModalOpen}
+        onOpenChange={setIsPrintModalOpen}
+        defaultYear={currentYear}
+        defaultMonth={new Date().getMonth() + 1}
       />
     </div>
   );
