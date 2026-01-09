@@ -2,6 +2,7 @@ import { type CacheConfig, type FetchOptions, serverGet } from '@/services/api';
 
 import type {
   DailyOverviewData,
+  DonationReportItem,
   ExpenseReportItem,
   IncomeReportItem,
   MonthlyDonations,
@@ -83,6 +84,20 @@ export const getExpenseReport = async (
 ) => {
   const response = await serverGet<ExpenseReportItem[]>(
     `/analytics/expense-report?startDate=${startDate}&endDate=${endDate}`,
+    fetchOptions,
+    cacheConfig,
+  );
+  return response.data;
+};
+
+export const getDonationReport = async (
+  startDate: string,
+  endDate: string,
+  fetchOptions?: FetchOptions,
+  cacheConfig?: CacheConfig,
+) => {
+  const response = await serverGet<DonationReportItem[]>(
+    `/analytics/donation-report?startDate=${startDate}&endDate=${endDate}`,
     fetchOptions,
     cacheConfig,
   );

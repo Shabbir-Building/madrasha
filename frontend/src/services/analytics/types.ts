@@ -49,3 +49,11 @@ export type ExpenseReportItem = {
   maintenance: number;
   construction: number;
 };
+
+export type DonationReportItem = {
+  date: string;
+  sadaqah: number;
+  zakat: number;
+  membership: number;
+  others: number;
+};
