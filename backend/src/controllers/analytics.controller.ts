@@ -65,6 +65,14 @@ type ExpenseReportItem = {
   construction: number;
 };
 
+type DonationReportItem = {
+  date: string;
+  sadaqah: number;
+  zakat: number;
+  membership: number;
+  others: number;
+};
+
 // Helper function to get date range for current year
 // const getYearDateRanges = () => {
 //   const now = new Date();
@@ -576,6 +584,89 @@ export const getExpenseReport = async (
   const response: ApiResponse<ExpenseReportItem[]> = {
     success: true,
     message: "Expense report data retrieved successfully",
+    data: reportData,
+    timestamp: new Date().toISOString(),
+  };
+
+  res.status(HttpStatus.OK).json(response);
+};
+
+export const getDonationReport = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { startDate, endDate } = req.query;
+  const branchParam = parseBranchQuery(req.query.branch);
+
+  if (!startDate || !endDate) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      success: false,
+      message: "startDate and endDate are required",
+    });
+    return;
+  }
+
+  const start = new Date(startDate as string);
+  const end = new Date(endDate as string);
+  end.setHours(23, 59, 59, 999);
+
+  const branchFilter =
+    branchParam != null ? { branch: branchParam } : undefined;
+
+  const donationByCategory = await Donation.aggregate([
+    {
+      $match: {
+        donation_date: { $gte: start, $lte: end },
+        ...(branchFilter ?? {}),
+      },
+    },
+    {
+      $group: {
+        _id: {
+          date: {
+            $dateToString: { format: "%Y-%m-%d", date: "$donation_date" },
+          },
+          type: "$donation_type",
+        },
+        total: { $sum: "$donation_amount" },
+      },
+    },
+  ]);
+
+  const reportMap = new Map<string, Record<number, number>>();
+
+  for (const item of donationByCategory) {
+    const dateStr = item._id.date;
+    const type = item._id.type;
+    const total = item.total;
+
+    if (!reportMap.has(dateStr)) {
+      reportMap.set(dateStr, {});
+    }
+    reportMap.get(dateStr)![type] = total;
+  }
+
+  const reportData: DonationReportItem[] = [];
+  const current = new Date(start);
+
+  while (current <= end) {
+    const dateStr = current.toISOString().split("T")[0];
+    const categories = reportMap.get(dateStr) || {};
+
+    reportData.push({
+      date: dateStr,
+      sadaqah: categories[1] || 0, // DonationType.SADAQAH = 1
+      zakat: categories[2] || 0, // DonationType.ZAKAT = 2
+      membership: categories[3] || 0, // DonationType.MEMBERSHIP = 3
+      others: categories[4] || 0, // DonationType.OTHERS = 4
+    });
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  const response: ApiResponse<DonationReportItem[]> = {
+    success: true,
+    message: "Donation report data retrieved successfully",
     data: reportData,
     timestamp: new Date().toISOString(),
   };
