@@ -1,5 +1,6 @@
 'use client';
 
+import { type AdminProfile, AdminRole } from '@/domain/admins';
 import { Branch } from '@/domain/branches/enums';
 import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import { DONATION_TYPE_REVERSE_MAP, type DonationTypeLabel } from '@/domain/donations/constants';
@@ -55,12 +56,17 @@ type DonationFormData = z.infer<typeof donationSchema>;
 interface AddDonationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  admin?: AdminProfile;
 }
 
-export function AddDonationModal({ open, onOpenChange }: AddDonationModalProps) {
+export function AddDonationModal({ open, onOpenChange, admin }: AddDonationModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
+
+  const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
+  const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
+  const canAccessGirls = isSuperAdmin || admin?.permissions?.access_girls_section;
 
   const {
     register,
@@ -73,6 +79,11 @@ export function AddDonationModal({ open, onOpenChange }: AddDonationModalProps) 
   } = useForm<DonationFormData>({
     resolver: zodResolver(donationSchema),
     defaultValues: {
+      branch: (() => {
+        if (canAccessBoys && !canAccessGirls) return Branch.BOYS;
+        if (!canAccessBoys && canAccessGirls) return Branch.GIRLS;
+        return undefined;
+      })(),
       fullname: '',
       phone_number: '',
       donation_type: '',
@@ -144,11 +155,14 @@ export function AddDonationModal({ open, onOpenChange }: AddDonationModalProps) 
                 <SelectValue placeholder="Select branch" />
               </SelectTrigger>
               <SelectContent>
-                {branchOptions.map((branch) => (
-                  <SelectItem key={branch} value={String(branch)}>
-                    {BRANCH_LABELS[branch]}
+                {canAccessBoys && (
+                  <SelectItem value={String(Branch.BOYS)}>{BRANCH_LABELS[Branch.BOYS]}</SelectItem>
+                )}
+                {canAccessGirls && (
+                  <SelectItem value={String(Branch.GIRLS)}>
+                    {BRANCH_LABELS[Branch.GIRLS]}
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
             {errors.branch && (

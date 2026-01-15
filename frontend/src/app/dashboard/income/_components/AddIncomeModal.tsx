@@ -1,6 +1,7 @@
 'use client';
 
-import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
+import { type AdminProfile, AdminRole } from '@/domain/admins';
+import { Branch } from '@/domain/branches';
 import { INCOME_TYPE_LABELS } from '@/domain/income';
 import { getTodayDate } from '@/lib/date-utils';
 import { createIncome } from '@/services/income';
@@ -44,12 +45,17 @@ type IncomeFormData = z.infer<typeof incomeSchema>;
 interface AddIncomeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  admin?: AdminProfile;
 }
 
-export function AddIncomeModal({ open, onOpenChange }: AddIncomeModalProps) {
+export function AddIncomeModal({ open, onOpenChange, admin }: AddIncomeModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
+
+  const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
+  const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
+  const canAccessGirls = isSuperAdmin || admin?.permissions?.access_girls_section;
 
   const {
     register,
@@ -60,7 +66,11 @@ export function AddIncomeModal({ open, onOpenChange }: AddIncomeModalProps) {
   } = useForm<IncomeFormData>({
     resolver: zodResolver(incomeSchema),
     defaultValues: {
-      branch: 0,
+      branch: (() => {
+        if (canAccessBoys && !canAccessGirls) return Branch.BOYS;
+        if (!canAccessBoys && canAccessGirls) return Branch.GIRLS;
+        return 0;
+      })(),
       type: 0,
       notes: '',
       income_date: getTodayDate(),
@@ -121,11 +131,8 @@ export function AddIncomeModal({ open, onOpenChange }: AddIncomeModalProps) {
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(BRANCH_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
+                      {canAccessBoys && <SelectItem value={`${Branch.BOYS}`}>Boys</SelectItem>}
+                      {canAccessGirls && <SelectItem value={`${Branch.GIRLS}`}>Girls</SelectItem>}
                     </SelectContent>
                   </Select>
                 )}

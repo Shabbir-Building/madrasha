@@ -4,6 +4,8 @@ import {
   IncomePrintModal,
   IncomePrintModalTrigger,
 } from '@/app/dashboard/_components/IncomePrintModal';
+import { type AdminProfile, AdminRole } from '@/domain/admins';
+import { Branch } from '@/domain/branches';
 import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import { INCOME_TYPE_LABELS, IncomeType as IncomeTypeEnum } from '@/domain/income';
 import { formatDate, getCurrentYear } from '@/lib/date-utils';
@@ -57,13 +59,19 @@ type IncomeListTableProps<TData, TValue> = {
   data: TData[];
   title?: string;
   description?: string;
+  admin?: AdminProfile;
 };
 
 export function IncomeListTable<TData, TValue>({
   columns,
   data,
   title = 'Income',
+  admin,
 }: IncomeListTableProps<TData, TValue>) {
+  const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
+  const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
+  const canAccessGirls = isSuperAdmin || admin?.permissions?.access_girls_section;
+
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
@@ -76,7 +84,13 @@ export function IncomeListTable<TData, TValue>({
 
   // Search and filter states
   const [noteSearch, setNoteSearch] = React.useState<string>('');
-  const [branchFilter, setBranchFilter] = React.useState<number | ''>('');
+  const [branchFilter, setBranchFilter] = React.useState<number | ''>(() => {
+    if (admin) {
+      if (canAccessBoys && !canAccessGirls) return Branch.BOYS;
+      if (!canAccessBoys && canAccessGirls) return Branch.GIRLS;
+    }
+    return '';
+  });
   const [typeFilter, setTypeFilter] = React.useState<number | ''>('');
   const [monthFilter, setMonthFilter] = React.useState<string>('');
   const [yearFilter, setYearFilter] = React.useState<string>('');
@@ -116,6 +130,14 @@ export function IncomeListTable<TData, TValue>({
 
   const filteredData = React.useMemo(() => {
     let filtered = data as Income[];
+
+    if (!isSuperAdmin) {
+      filtered = filtered.filter((income) => {
+        if (income.branch === Branch.BOYS) return canAccessBoys;
+        if (income.branch === Branch.GIRLS) return canAccessGirls;
+        return true;
+      });
+    }
 
     if (noteSearch) {
       filtered = filtered.filter((income) =>
@@ -259,18 +281,22 @@ export function IncomeListTable<TData, TValue>({
               >
                 All Branches
               </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={branchFilter === 1}
-                onCheckedChange={() => setBranchFilter(branchFilter === 1 ? '' : 1)}
-              >
-                Boys
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={branchFilter === 2}
-                onCheckedChange={() => setBranchFilter(branchFilter === 2 ? '' : 2)}
-              >
-                Girls
-              </DropdownMenuCheckboxItem>
+              {canAccessBoys && (
+                <DropdownMenuCheckboxItem
+                  checked={branchFilter === 1}
+                  onCheckedChange={() => setBranchFilter(branchFilter === 1 ? '' : 1)}
+                >
+                  Boys
+                </DropdownMenuCheckboxItem>
+              )}
+              {canAccessGirls && (
+                <DropdownMenuCheckboxItem
+                  checked={branchFilter === 2}
+                  onCheckedChange={() => setBranchFilter(branchFilter === 2 ? '' : 2)}
+                >
+                  Girls
+                </DropdownMenuCheckboxItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -434,7 +460,7 @@ export function IncomeListTable<TData, TValue>({
         </div>
       </div>
 
-      <AddIncomeModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+      <AddIncomeModal open={isModalOpen} onOpenChange={setIsModalOpen} admin={admin} />
       <EditIncomeModal
         open={isEditModalOpen}
         onOpenChange={(open) => {
@@ -444,6 +470,7 @@ export function IncomeListTable<TData, TValue>({
           }
         }}
         income={selectedIncome}
+        admin={admin}
       />
       <DeleteIncomeModal
         open={isDeleteModalOpen}

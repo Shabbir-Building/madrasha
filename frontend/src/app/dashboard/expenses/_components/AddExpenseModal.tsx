@@ -1,5 +1,7 @@
 'use client';
 
+import { type AdminProfile, AdminRole } from '@/domain/admins';
+import { Branch } from '@/domain/branches/enums';
 import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import { EXPENSE_TYPE_REVERSE_MAP, type ExpenseTypeLabel } from '@/domain/expenses/constants';
 import { getTodayDate } from '@/lib/date-utils';
@@ -62,15 +64,24 @@ type ExpenseFormData = z.infer<typeof expenseSchema>;
 interface AddExpenseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  admin?: AdminProfile;
 }
 
-export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
+export function AddExpenseModal({ open, onOpenChange, admin }: AddExpenseModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
 
+  const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
+  const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
+  const canAccessGirls = isSuperAdmin || admin?.permissions?.access_girls_section;
+
   const createDefaultValues = (): ExpenseFormData => ({
-    branch: 0,
+    branch: (() => {
+      if (canAccessBoys && !canAccessGirls) return Branch.BOYS;
+      if (!canAccessBoys && canAccessGirls) return Branch.GIRLS;
+      return 0;
+    })(),
     type: '',
     notes: '',
     expense_date: getTodayDate(),
@@ -148,11 +159,16 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(BRANCH_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
+                      {canAccessBoys && (
+                        <SelectItem value={String(Branch.BOYS)}>
+                          {BRANCH_LABELS[Branch.BOYS]}
                         </SelectItem>
-                      ))}
+                      )}
+                      {canAccessGirls && (
+                        <SelectItem value={String(Branch.GIRLS)}>
+                          {BRANCH_LABELS[Branch.GIRLS]}
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 )}

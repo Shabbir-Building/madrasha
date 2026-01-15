@@ -18,6 +18,7 @@ const DonationsPage = async () => {
         columns={donationListTableColumns}
         data={response.docs}
         title="Donations"
+        admin={session?.admin}
       />
     </main>
   );

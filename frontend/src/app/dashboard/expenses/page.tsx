@@ -14,7 +14,12 @@ const ExpensesPage = async () => {
 
   return (
     <main className="container mx-auto">
-      <ExpenseListTable columns={expenseListTableColumns} data={response.docs} title="Expenses" />
+      <ExpenseListTable
+        columns={expenseListTableColumns}
+        data={response.docs}
+        title="Expenses"
+        admin={session?.admin}
+      />
     </main>
   );
 };

@@ -14,7 +14,12 @@ const IncomePage = async () => {
 
   return (
     <main className="container mx-auto">
-      <IncomeListTable columns={incomeListTableColumns} data={response.docs} title="Income" />
+      <IncomeListTable
+        columns={incomeListTableColumns}
+        data={response.docs}
+        title="Income"
+        admin={session?.admin}
+      />
     </main>
   );
 };
