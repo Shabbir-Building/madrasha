@@ -16,7 +16,12 @@ const StudentsPage = async () => {
 
   return (
     <main className="container mx-auto">
-      <StudentListTable columns={studentListTableColumns} data={students} title="Students" />
+      <StudentListTable
+        columns={studentListTableColumns}
+        data={students}
+        title="Students"
+        admin={session?.admin}
+      />
     </main>
   );
 };

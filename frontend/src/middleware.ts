@@ -9,6 +9,7 @@ import {
   isAuthPage,
   isJwtExpired,
   isProtectedPath,
+  requiredRolesForPath,
 } from './lib/auth-middleware';
 
 export async function middleware(req: NextRequest) {
@@ -34,12 +35,12 @@ export async function middleware(req: NextRequest) {
     }
 
     // Optional role checks can be re-enabled later
-    // const required = requiredRolesForPath(pathname);
-    // if (required && token?.admin && typeof token.admin.role === 'number') {
-    //   if (!required.includes(token.admin.role)) {
-    //     return NextResponse.redirect(new URL('/login', req.url));
-    //   }
-    // }
+    const required = requiredRolesForPath(pathname);
+    if (required && token?.admin && typeof token.admin.role === 'number') {
+      if (!required.includes(token.admin.role)) {
+        return NextResponse.redirect(new URL('/dashboard/students', req.url));
+      }
+    }
   }
 
   return NextResponse.next();

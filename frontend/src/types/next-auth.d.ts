@@ -5,7 +5,10 @@ type AdminProfile = {
   fullname: string;
   phone_number: string;
   role: number;
-  permissions?: Record<string, boolean>;
+  permissions: {
+    access_boys_section?: boolean;
+    access_girls_section?: boolean;
+  };
 };
 
 declare module 'next-auth' {
