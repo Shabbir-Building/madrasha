@@ -1,5 +1,6 @@
 'use client';
 
+import { type AdminProfile, AdminRole } from '@/domain/admins';
 import { BRANCH_LABELS, Branch } from '@/domain/branches';
 import {
   STUDENT_CLASS_LABELS,
@@ -45,17 +46,32 @@ interface StudentListTableProps<TData, TValue> {
   data: TData[];
   title?: string;
   description?: string;
+  admin?: AdminProfile;
 }
 
 export function StudentListTable<TData, TValue>({
   columns,
   data,
   title = 'Students',
+  admin,
 }: StudentListTableProps<TData, TValue>) {
+  const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
+  const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
+  const canAccessGirls = isSuperAdmin || admin?.permissions?.access_girls_section;
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
   const [nameSearch, setNameSearch] = React.useState<string>('');
-  const [branchFilter, setBranchFilter] = React.useState<number | null>(null);
+  const [branchFilter, setBranchFilter] = React.useState<number | null>(() => {
+    if (admin) {
+      if (canAccessBoys && !canAccessGirls) {
+        return Branch.BOYS;
+      } else if (!canAccessBoys && canAccessGirls) {
+        return Branch.GIRLS;
+      }
+    }
+    return null;
+  });
+
   const [sectionFilter, setSectionFilter] = React.useState<number | null>(null);
   const [classFilter, setClassFilter] = React.useState<number | null>(null);
   const [yearFilter, setYearFilter] = React.useState<string>('');
@@ -64,6 +80,15 @@ export function StudentListTable<TData, TValue>({
     let filtered = data as Student[];
 
     filtered = filtered.filter((student) => !student.disable);
+
+    // Initial section-based filtering for non-super admins
+    if (!isSuperAdmin) {
+      filtered = filtered.filter((student) => {
+        if (student.branch === Branch.BOYS) return canAccessBoys;
+        if (student.branch === Branch.GIRLS) return canAccessGirls;
+        return true; // Fallback for any other branches if they exist
+      });
+    }
 
     if (nameSearch) {
       filtered = filtered.filter((student) =>
@@ -135,22 +160,26 @@ export function StudentListTable<TData, TValue>({
               >
                 All Branches
               </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={branchFilter === Branch.BOYS}
-                onCheckedChange={() =>
-                  setBranchFilter(branchFilter === Branch.BOYS ? null : Branch.BOYS)
-                }
-              >
-                {BRANCH_LABELS[Branch.BOYS]}
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={branchFilter === Branch.GIRLS}
-                onCheckedChange={() =>
-                  setBranchFilter(branchFilter === Branch.GIRLS ? null : Branch.GIRLS)
-                }
-              >
-                {BRANCH_LABELS[Branch.GIRLS]}
-              </DropdownMenuCheckboxItem>
+              {canAccessBoys && (
+                <DropdownMenuCheckboxItem
+                  checked={branchFilter === Branch.BOYS}
+                  onCheckedChange={() =>
+                    setBranchFilter(branchFilter === Branch.BOYS ? null : Branch.BOYS)
+                  }
+                >
+                  {BRANCH_LABELS[Branch.BOYS]}
+                </DropdownMenuCheckboxItem>
+              )}
+              {canAccessGirls && (
+                <DropdownMenuCheckboxItem
+                  checked={branchFilter === Branch.GIRLS}
+                  onCheckedChange={() =>
+                    setBranchFilter(branchFilter === Branch.GIRLS ? null : Branch.GIRLS)
+                  }
+                >
+                  {BRANCH_LABELS[Branch.GIRLS]}
+                </DropdownMenuCheckboxItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { AdminRole } from '@/domain/admins';
 import {
   BanknoteArrowDown,
   CircleDollarSign,
@@ -9,6 +10,7 @@ import {
   UserRoundCog,
   Users,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import MadrasaLogo from '~/public/images/habrul ummah model madrasa logo.svg';
 
 import * as React from 'react';
@@ -70,6 +72,23 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data: session } = useSession();
+  const role = session?.admin?.role;
+
+  const filteredNavMain = React.useMemo(() => {
+    return data.navMain.filter((item) => {
+      // Show everything to Super Admin
+      if (role === AdminRole.SUPER_ADMIN) return true;
+
+      // Hide Overview and Admins from non-super admins
+      if (item.title === 'Overview' || item.title === 'Admins') {
+        return false;
+      }
+
+      return true;
+    });
+  }, [role]);
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -93,7 +112,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={filteredNavMain} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

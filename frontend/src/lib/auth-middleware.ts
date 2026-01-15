@@ -1,3 +1,5 @@
+import { AdminRole } from '@/domain/admins';
+
 import { NextResponse } from 'next/server';
 
 type ProtectedRoute = {
@@ -7,7 +9,7 @@ type ProtectedRoute = {
 
 // Central list of protected areas and their default post-login destinations
 export const PROTECTED_ROUTES: ProtectedRoute[] = [
-  { base: '/dashboard', defaultRedirect: '/dashboard/overview' },
+  { base: '/dashboard', defaultRedirect: '/dashboard/students' },
   { base: '/dashboard/employees', defaultRedirect: '/dashboard/employees' },
   // Add more: { base: '/admin', defaultRedirect: '/admin/home' }
 ];
@@ -33,7 +35,10 @@ export const buildRedirect = (reqUrl: string, target: string): NextResponse => {
 
 // Optional role guard mapping (extend when needed)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const requiredRolesForPath = (_pathname: string): number[] | undefined => {
+export const requiredRolesForPath = (pathname: string): number[] | undefined => {
+  if (pathname === '/dashboard/overview' || pathname === '/dashboard/admins') {
+    return [AdminRole.SUPER_ADMIN];
+  }
   return undefined;
 };
 
