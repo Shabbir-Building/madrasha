@@ -92,7 +92,7 @@ export function EditIncomeModal({ open, onOpenChange, income, admin }: EditIncom
     setIsSubmitting(true);
     try {
       const { error } = await updateIncome(income._id, data, {
-        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+        accessToken: session?.accessToken,
       });
 
       if (error) {

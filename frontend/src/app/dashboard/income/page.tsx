@@ -7,7 +7,7 @@ import { IncomeListTable, incomeListTableColumns } from './_components/IncomeLis
 const IncomePage = async () => {
   const session = await getServerSession(authOptions);
   const response = await getIncomes({
-    accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+    accessToken: session?.accessToken,
   });
 
   if (!response) return;

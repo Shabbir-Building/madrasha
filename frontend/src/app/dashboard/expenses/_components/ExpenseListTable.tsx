@@ -126,7 +126,7 @@ export function ExpenseListTable({
     setIsDeleting(true);
     try {
       const { error } = await deleteExpense(expense._id, {
-        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+        accessToken: session?.accessToken,
       });
 
       if (error) {
@@ -187,7 +187,17 @@ export function ExpenseListTable({
     }
 
     return filtered as typeof data;
-  }, [data, noteSearch, branchFilter, typeFilter, monthFilter, yearFilter]);
+  }, [
+    data,
+    noteSearch,
+    branchFilter,
+    typeFilter,
+    monthFilter,
+    yearFilter,
+    canAccessBoys,
+    canAccessGirls,
+    isSuperAdmin,
+  ]);
 
   // Calculate total amount from filtered data
   const totalAmount = React.useMemo(() => {

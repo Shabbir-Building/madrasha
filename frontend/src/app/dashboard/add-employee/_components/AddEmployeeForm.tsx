@@ -1,7 +1,7 @@
 'use client';
 
 import { type AdminProfile, AdminRole } from '@/domain/admins';
-import { Branch, parseBranchLabel } from '@/domain/branches';
+import { parseBranchLabel } from '@/domain/branches';
 import {
   DESIGNATION_BY_EMPLOYEE_TYPE,
   DESIGNATION_LABELS,

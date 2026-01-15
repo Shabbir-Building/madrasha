@@ -130,7 +130,15 @@ export function EmployeeListTable<TData, TValue>({
     });
 
     return filtered as TData[];
-  }, [data, nameSearch, branchFilter, employmentTypeFilter]);
+  }, [
+    data,
+    nameSearch,
+    branchFilter,
+    employmentTypeFilter,
+    canAccessBoys,
+    canAccessGirls,
+    isSuperAdmin,
+  ]);
 
   const table = useReactTable({
     data: filteredData,

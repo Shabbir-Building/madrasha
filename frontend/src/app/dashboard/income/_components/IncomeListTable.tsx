@@ -109,7 +109,7 @@ export function IncomeListTable<TData, TValue>({
     setIsDeleting(true);
     try {
       const { error } = await deleteIncome(income._id, {
-        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+        accessToken: session?.accessToken,
       });
 
       if (error) {
@@ -169,7 +169,17 @@ export function IncomeListTable<TData, TValue>({
     }
 
     return filtered as TData[];
-  }, [data, noteSearch, branchFilter, typeFilter, monthFilter, yearFilter]);
+  }, [
+    data,
+    noteSearch,
+    branchFilter,
+    typeFilter,
+    monthFilter,
+    yearFilter,
+    canAccessBoys,
+    canAccessGirls,
+    isSuperAdmin,
+  ]);
 
   // Calculate total amount from filtered data
   const totalAmount = React.useMemo(() => {

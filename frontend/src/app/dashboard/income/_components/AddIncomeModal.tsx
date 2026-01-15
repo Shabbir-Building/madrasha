@@ -82,7 +82,7 @@ export function AddIncomeModal({ open, onOpenChange, admin }: AddIncomeModalProp
     setIsSubmitting(true);
     try {
       const { error } = await createIncome(data, {
-        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+        accessToken: session?.accessToken,
       });
 
       if (error) {

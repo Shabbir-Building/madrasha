@@ -10,7 +10,7 @@ export default async function EmployeeDetailsPage({ params }: { params: Promise<
   return (
     <EmployeeDetailsForm
       admin={session?.admin}
-      accessToken={(session as any)?.accessToken}
+      accessToken={session?.accessToken}
       employeeId={id}
     />
   );

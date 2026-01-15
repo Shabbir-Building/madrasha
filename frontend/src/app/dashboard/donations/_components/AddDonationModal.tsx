@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const branchOptions: Branch[] = [Branch.BOYS, Branch.GIRLS];
 const donationTypeOptions = Object.keys(DONATION_TYPE_REVERSE_MAP) as DonationTypeLabel[];
 
 // Zod validation schema
@@ -112,7 +111,7 @@ export function AddDonationModal({ open, onOpenChange, admin }: AddDonationModal
           notes: data.notes || undefined,
         },
         {
-          accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+          accessToken: session?.accessToken,
         },
       );
 

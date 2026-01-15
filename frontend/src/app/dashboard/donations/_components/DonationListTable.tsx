@@ -56,7 +56,6 @@ import { EditDonationModal } from './EditDonationModal';
 export type Donation = ApiDonation;
 
 const donationTypeOptions = Object.keys(DONATION_TYPE_REVERSE_MAP) as DonationTypeLabel[];
-const branchOptions: Branch[] = [Branch.BOYS, Branch.GIRLS];
 
 const badgeVariantByDonationType: Record<
   DonationTypeLabel,
@@ -123,7 +122,7 @@ export function DonationListTable<TData, TValue>({
     setIsDeleting(true);
     try {
       const { error } = await deleteDonation(donation._id, {
-        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+        accessToken: session?.accessToken,
       });
 
       if (error) {

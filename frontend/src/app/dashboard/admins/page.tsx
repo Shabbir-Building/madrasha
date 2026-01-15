@@ -9,7 +9,7 @@ import { AdminListTable, adminListTableColumns } from './_components/AdminListTa
 const AdminsListPage = async () => {
   const session = await getServerSession(authOptions);
   const response = await getAdmins({
-    accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+    accessToken: session?.accessToken,
   });
 
   const admins = (response?.docs || [])

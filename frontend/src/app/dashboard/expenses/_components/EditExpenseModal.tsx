@@ -1,7 +1,7 @@
 'use client';
 
 import { type AdminProfile, AdminRole } from '@/domain/admins';
-import { BRANCH_MAP, BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
+import { type BranchLabel } from '@/domain/branches/constants';
 import { Branch } from '@/domain/branches/enums';
 import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import {
@@ -131,7 +131,7 @@ export function EditExpenseModal({ open, onOpenChange, expense, admin }: EditExp
           notes: data.notes,
         },
         {
-          accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+          accessToken: session?.accessToken,
         },
       );
 

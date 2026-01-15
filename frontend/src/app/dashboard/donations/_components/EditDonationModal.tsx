@@ -35,7 +35,6 @@ import {
 
 import type { Donation } from './DonationListTable';
 
-const branchOptions: Branch[] = [Branch.BOYS, Branch.GIRLS];
 const donationTypeOptions = Object.keys(DONATION_TYPE_REVERSE_MAP) as DonationTypeLabel[];
 
 const donationSchema = z.object({
@@ -135,7 +134,7 @@ export function EditDonationModal({ open, onOpenChange, donation, admin }: EditD
           notes: data.notes || undefined,
         },
         {
-          accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+          accessToken: session?.accessToken,
         },
       );
 

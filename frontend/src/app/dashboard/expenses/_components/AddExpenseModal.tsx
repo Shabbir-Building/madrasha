@@ -113,7 +113,7 @@ export function AddExpenseModal({ open, onOpenChange, admin }: AddExpenseModalPr
           notes: data.notes,
         },
         {
-          accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+          accessToken: session?.accessToken,
         },
       );
 

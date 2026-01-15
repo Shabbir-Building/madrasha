@@ -7,7 +7,7 @@ import { EmployeeListTable, employeeListTableColumns } from './_components/Emplo
 const EmployesPage = async () => {
   const session = await getServerSession(authOptions);
   const response = await getEmployees({
-    accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+    accessToken: session?.accessToken,
   });
 
   if (!response) return;

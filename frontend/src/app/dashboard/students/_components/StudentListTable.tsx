@@ -112,7 +112,17 @@ export function StudentListTable<TData, TValue>({
     }
 
     return filtered as TData[];
-  }, [data, nameSearch, branchFilter, sectionFilter, classFilter, yearFilter]);
+  }, [
+    data,
+    nameSearch,
+    branchFilter,
+    sectionFilter,
+    classFilter,
+    yearFilter,
+    canAccessBoys,
+    canAccessGirls,
+    isSuperAdmin,
+  ]);
 
   const table = useReactTable({
     data: filteredData,

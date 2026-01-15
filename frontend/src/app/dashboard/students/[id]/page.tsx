@@ -8,10 +8,6 @@ export default async function StudentDetailsPage({ params }: { params: Promise<{
   const session = await getServerSession(authOptions);
 
   return (
-    <StudentDetailsForm
-      admin={session?.admin}
-      accessToken={(session as any)?.accessToken}
-      studentId={id}
-    />
+    <StudentDetailsForm admin={session?.admin} accessToken={session?.accessToken} studentId={id} />
   );
 }
