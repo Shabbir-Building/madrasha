@@ -36,7 +36,6 @@ export default function Home() {
             size="lg"
             className="cursor-pointer text-primary-foreground font-semibold px-8 py-3 dark:text-white"
           >
-            {/* Button */}
             Go to Dashboard
           </Button>
         </Link>
