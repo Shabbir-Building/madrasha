@@ -1,5 +1,7 @@
 'use client';
 
+import { DonationPrintModal } from '@/app/dashboard/_components/DonationPrintModal';
+import { type AdminProfile, AdminRole } from '@/domain/admins';
 import { Branch } from '@/domain/branches/enums';
 import { BRANCH_LABELS, parseBranchLabel } from '@/domain/branches/lib/labels';
 import {
@@ -26,7 +28,6 @@ import * as React from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { DonationPrintModal } from '@/app/dashboard/_components/DonationPrintModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,7 +56,6 @@ import { EditDonationModal } from './EditDonationModal';
 export type Donation = ApiDonation;
 
 const donationTypeOptions = Object.keys(DONATION_TYPE_REVERSE_MAP) as DonationTypeLabel[];
-const branchOptions: Branch[] = [Branch.BOYS, Branch.GIRLS];
 
 const badgeVariantByDonationType: Record<
   DonationTypeLabel,
@@ -72,13 +72,19 @@ interface DonationListTableProps<TData, TValue> {
   data: TData[];
   title?: string;
   description?: string;
+  admin?: AdminProfile;
 }
 
 export function DonationListTable<TData, TValue>({
   columns,
   data,
   title = 'Donations',
+  admin,
 }: DonationListTableProps<TData, TValue>) {
+  const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
+  const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
+  const canAccessGirls = isSuperAdmin || admin?.permissions?.access_girls_section;
+
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
@@ -91,7 +97,13 @@ export function DonationListTable<TData, TValue>({
 
   // Search and filter states
   const [nameSearch, setNameSearch] = React.useState<string>('');
-  const [branchFilter, setBranchFilter] = React.useState<Branch | null>(null);
+  const [branchFilter, setBranchFilter] = React.useState<Branch | null>(() => {
+    if (admin) {
+      if (canAccessBoys && !canAccessGirls) return Branch.BOYS;
+      if (!canAccessBoys && canAccessGirls) return Branch.GIRLS;
+    }
+    return null;
+  });
   const [typeFilter, setTypeFilter] = React.useState<DonationTypeLabel | ''>('');
   const [monthFilter, setMonthFilter] = React.useState<string>('');
   const [yearFilter, setYearFilter] = React.useState<string>('');
@@ -110,7 +122,7 @@ export function DonationListTable<TData, TValue>({
     setIsDeleting(true);
     try {
       const { error } = await deleteDonation(donation._id, {
-        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+        accessToken: session?.accessToken,
       });
 
       if (error) {
@@ -131,6 +143,14 @@ export function DonationListTable<TData, TValue>({
 
   const filteredData = React.useMemo(() => {
     let filtered = data as Donation[];
+
+    if (!isSuperAdmin) {
+      filtered = filtered.filter((donation) => {
+        if (donation.branch === Branch.BOYS) return canAccessBoys;
+        if (donation.branch === Branch.GIRLS) return canAccessGirls;
+        return true;
+      });
+    }
 
     if (nameSearch) {
       filtered = filtered.filter((donation) =>
@@ -275,15 +295,26 @@ export function DonationListTable<TData, TValue>({
               >
                 All Branches
               </DropdownMenuCheckboxItem>
-              {branchOptions.map((branch) => (
+              {canAccessBoys && (
                 <DropdownMenuCheckboxItem
-                  key={branch}
-                  checked={branchFilter === branch}
-                  onCheckedChange={() => setBranchFilter(branchFilter === branch ? null : branch)}
+                  checked={branchFilter === Branch.BOYS}
+                  onCheckedChange={() =>
+                    setBranchFilter(branchFilter === Branch.BOYS ? null : Branch.BOYS)
+                  }
                 >
-                  {BRANCH_LABELS[branch]}
+                  {BRANCH_LABELS[Branch.BOYS]}
                 </DropdownMenuCheckboxItem>
-              ))}
+              )}
+              {canAccessGirls && (
+                <DropdownMenuCheckboxItem
+                  checked={branchFilter === Branch.GIRLS}
+                  onCheckedChange={() =>
+                    setBranchFilter(branchFilter === Branch.GIRLS ? null : Branch.GIRLS)
+                  }
+                >
+                  {BRANCH_LABELS[Branch.GIRLS]}
+                </DropdownMenuCheckboxItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -368,11 +399,7 @@ export function DonationListTable<TData, TValue>({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button
-            variant="outline"
-            className="h-9 px-3"
-            onClick={() => setIsPrintModalOpen(true)}
-          >
+          <Button variant="outline" className="h-9 px-3" onClick={() => setIsPrintModalOpen(true)}>
             <PrinterIcon className="h-4 w-4" />
             Print
           </Button>
@@ -453,7 +480,7 @@ export function DonationListTable<TData, TValue>({
         </div>
       </div>
 
-      <AddDonationModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+      <AddDonationModal open={isModalOpen} onOpenChange={setIsModalOpen} admin={admin} />
       <EditDonationModal
         open={isEditModalOpen}
         onOpenChange={(open) => {
@@ -463,6 +490,7 @@ export function DonationListTable<TData, TValue>({
           }
         }}
         donation={selectedDonation}
+        admin={admin}
       />
       <DeleteDonationModal
         open={isDeleteModalOpen}

@@ -4,7 +4,9 @@ import {
   ExpensePrintModal,
   ExpensePrintModalTrigger,
 } from '@/app/dashboard/_components/ExpensePrintModal';
-import { BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
+import { type AdminProfile, AdminRole } from '@/domain/admins';
+import { Branch } from '@/domain/branches/enums';
+import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import {
   EXPENSE_TYPE_MAP,
   EXPENSE_TYPE_REVERSE_MAP,
@@ -74,9 +76,19 @@ type ExpenseListTableProps = {
   data: Expense[];
   title?: string;
   description?: string;
+  admin?: AdminProfile;
 };
 
-export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseListTableProps) {
+export function ExpenseListTable({
+  columns,
+  data,
+  title = 'Expenses',
+  admin,
+}: ExpenseListTableProps) {
+  const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
+  const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
+  const canAccessGirls = isSuperAdmin || admin?.permissions?.access_girls_section;
+
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
@@ -89,7 +101,13 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
 
   // Search and filter states
   const [noteSearch, setNoteSearch] = React.useState<string>('');
-  const [branchFilter, setBranchFilter] = React.useState<BranchLabel | ''>('');
+  const [branchFilter, setBranchFilter] = React.useState<Branch | ''>(() => {
+    if (admin) {
+      if (canAccessBoys && !canAccessGirls) return Branch.BOYS;
+      if (!canAccessBoys && canAccessGirls) return Branch.GIRLS;
+    }
+    return '';
+  });
   const [typeFilter, setTypeFilter] = React.useState<ExpenseTypeLabel | ''>('');
   const [monthFilter, setMonthFilter] = React.useState<string>('');
   const [yearFilter, setYearFilter] = React.useState<string>('');
@@ -108,7 +126,7 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
     setIsDeleting(true);
     try {
       const { error } = await deleteExpense(expense._id, {
-        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+        accessToken: session?.accessToken,
       });
 
       if (error) {
@@ -130,6 +148,14 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
   const filteredData = React.useMemo(() => {
     let filtered = data as Expense[];
 
+    if (!isSuperAdmin) {
+      filtered = filtered.filter((expense) => {
+        if (expense.branch === Branch.BOYS) return canAccessBoys;
+        if (expense.branch === Branch.GIRLS) return canAccessGirls;
+        return true;
+      });
+    }
+
     if (noteSearch) {
       filtered = filtered.filter((expense) =>
         expense.notes.toLowerCase().includes(noteSearch.toLowerCase()),
@@ -137,8 +163,7 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
     }
 
     if (branchFilter) {
-      const branchValue = BRANCH_REVERSE_MAP[branchFilter as keyof typeof BRANCH_REVERSE_MAP];
-      filtered = filtered.filter((expense) => expense.branch === branchValue);
+      filtered = filtered.filter((expense) => expense.branch === branchFilter);
     }
 
     if (typeFilter) {
@@ -162,7 +187,17 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
     }
 
     return filtered as typeof data;
-  }, [data, noteSearch, branchFilter, typeFilter, monthFilter, yearFilter]);
+  }, [
+    data,
+    noteSearch,
+    branchFilter,
+    typeFilter,
+    monthFilter,
+    yearFilter,
+    canAccessBoys,
+    canAccessGirls,
+    isSuperAdmin,
+  ]);
 
   // Calculate total amount from filtered data
   const totalAmount = React.useMemo(() => {
@@ -243,9 +278,6 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
   const currentYear = getCurrentYear();
   const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
-  // Get branch options from BRANCH_MAP
-  const branchOptions: BranchLabel[] = ['Boys', 'Girls'];
-
   return (
     <div className="w-full space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -266,7 +298,7 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-9 px-3 bg-transparent">
-                {branchFilter || 'Branch'}
+                {branchFilter ? BRANCH_LABELS[branchFilter] : 'Branch'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -276,15 +308,26 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
               >
                 All Branches
               </DropdownMenuCheckboxItem>
-              {branchOptions.map((branch) => (
+              {canAccessBoys && (
                 <DropdownMenuCheckboxItem
-                  key={branch}
-                  checked={branchFilter === branch}
-                  onCheckedChange={() => setBranchFilter(branchFilter === branch ? '' : branch)}
+                  checked={branchFilter === Branch.BOYS}
+                  onCheckedChange={() =>
+                    setBranchFilter(branchFilter === Branch.BOYS ? '' : Branch.BOYS)
+                  }
                 >
-                  {branch}
+                  Boys
                 </DropdownMenuCheckboxItem>
-              ))}
+              )}
+              {canAccessGirls && (
+                <DropdownMenuCheckboxItem
+                  checked={branchFilter === Branch.GIRLS}
+                  onCheckedChange={() =>
+                    setBranchFilter(branchFilter === Branch.GIRLS ? '' : Branch.GIRLS)
+                  }
+                >
+                  Girls
+                </DropdownMenuCheckboxItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -450,7 +493,7 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
         </div>
       </div>
 
-      <AddExpenseModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+      <AddExpenseModal open={isModalOpen} onOpenChange={setIsModalOpen} admin={admin} />
       <EditExpenseModal
         open={isEditModalOpen}
         onOpenChange={(open) => {
@@ -460,6 +503,7 @@ export function ExpenseListTable({ columns, data, title = 'Expenses' }: ExpenseL
           }
         }}
         expense={selectedExpense}
+        admin={admin}
       />
       <DeleteExpenseModal
         open={isDeleteModalOpen}

@@ -1,6 +1,7 @@
 'use client';
 
-import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
+import { type AdminProfile, AdminRole } from '@/domain/admins';
+import { Branch } from '@/domain/branches/enums';
 import { INCOME_TYPE_LABELS } from '@/domain/income';
 import { updateIncome } from '@/services/income';
 import type { Income } from '@/services/income/types';
@@ -44,12 +45,17 @@ interface EditIncomeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   income: Income | null;
+  admin?: AdminProfile;
 }
 
-export function EditIncomeModal({ open, onOpenChange, income }: EditIncomeModalProps) {
+export function EditIncomeModal({ open, onOpenChange, income, admin }: EditIncomeModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
+
+  const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
+  const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
+  const canAccessGirls = isSuperAdmin || admin?.permissions?.access_girls_section;
 
   const {
     register,
@@ -86,7 +92,7 @@ export function EditIncomeModal({ open, onOpenChange, income }: EditIncomeModalP
     setIsSubmitting(true);
     try {
       const { error } = await updateIncome(income._id, data, {
-        accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+        accessToken: session?.accessToken,
       });
 
       if (error) {
@@ -136,11 +142,8 @@ export function EditIncomeModal({ open, onOpenChange, income }: EditIncomeModalP
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(BRANCH_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
+                      {canAccessBoys && <SelectItem value={`${Branch.BOYS}`}>Boys</SelectItem>}
+                      {canAccessGirls && <SelectItem value={`${Branch.GIRLS}`}>Girls</SelectItem>}
                     </SelectContent>
                   </Select>
                 )}

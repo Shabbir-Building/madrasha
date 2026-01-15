@@ -7,7 +7,7 @@ import { EmployeeListTable, employeeListTableColumns } from './_components/Emplo
 const EmployesPage = async () => {
   const session = await getServerSession(authOptions);
   const response = await getEmployees({
-    accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+    accessToken: session?.accessToken,
   });
 
   if (!response) return;
@@ -15,7 +15,12 @@ const EmployesPage = async () => {
   const employees = response.docs.filter((employee) => !employee.disable);
 
   return (
-    <EmployeeListTable columns={employeeListTableColumns} data={employees} title="Employees" />
+    <EmployeeListTable
+      columns={employeeListTableColumns}
+      data={employees}
+      title="Employees"
+      admin={session?.admin}
+    />
   );
 };
 

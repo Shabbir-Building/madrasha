@@ -1,5 +1,6 @@
 'use client';
 
+import { type AdminProfile, AdminRole } from '@/domain/admins';
 import { BRANCH_MAP, BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
 import { Branch } from '@/domain/branches/enums';
 import { BRANCH_LABELS, parseBranchLabel } from '@/domain/branches/lib/labels';
@@ -34,7 +35,6 @@ import {
 
 import type { Donation } from './DonationListTable';
 
-const branchOptions: Branch[] = [Branch.BOYS, Branch.GIRLS];
 const donationTypeOptions = Object.keys(DONATION_TYPE_REVERSE_MAP) as DonationTypeLabel[];
 
 const donationSchema = z.object({
@@ -61,12 +61,17 @@ interface EditDonationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   donation: Donation | null;
+  admin?: AdminProfile;
 }
 
-export function EditDonationModal({ open, onOpenChange, donation }: EditDonationModalProps) {
+export function EditDonationModal({ open, onOpenChange, donation, admin }: EditDonationModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
+
+  const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
+  const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
+  const canAccessGirls = isSuperAdmin || admin?.permissions?.access_girls_section;
 
   const {
     register,
@@ -129,7 +134,7 @@ export function EditDonationModal({ open, onOpenChange, donation }: EditDonation
           notes: data.notes || undefined,
         },
         {
-          accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+          accessToken: session?.accessToken,
         },
       );
 
@@ -173,11 +178,14 @@ export function EditDonationModal({ open, onOpenChange, donation }: EditDonation
                 <SelectValue placeholder="Select branch" />
               </SelectTrigger>
               <SelectContent>
-                {branchOptions.map((branch) => (
-                  <SelectItem key={branch} value={String(branch)}>
-                    {BRANCH_LABELS[branch]}
+                {canAccessBoys && (
+                  <SelectItem value={String(Branch.BOYS)}>{BRANCH_LABELS[Branch.BOYS]}</SelectItem>
+                )}
+                {canAccessGirls && (
+                  <SelectItem value={String(Branch.GIRLS)}>
+                    {BRANCH_LABELS[Branch.GIRLS]}
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
             {errors.branch && (

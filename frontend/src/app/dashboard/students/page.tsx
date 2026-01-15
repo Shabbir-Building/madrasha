@@ -7,7 +7,7 @@ import { StudentListTable, studentListTableColumns } from './_components/Student
 const StudentsPage = async () => {
   const session = await getServerSession(authOptions);
   const response = await getStudents({
-    accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+    accessToken: session?.accessToken,
   });
 
   if (!response) return;
