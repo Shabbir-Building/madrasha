@@ -1,5 +1,6 @@
 'use client';
 
+import { type AdminProfile, AdminRole } from '@/domain/admins';
 import { Branch, toBranchLabel } from '@/domain/branches';
 import {
   Designation,
@@ -45,6 +46,7 @@ interface EmployeeListTableProps<TData, TValue> {
   data: TData[];
   title?: string;
   description?: string;
+  admin?: AdminProfile;
 }
 
 /**
@@ -71,17 +73,38 @@ export function EmployeeListTable<TData, TValue>({
   columns,
   data,
   title = 'Employees',
+  admin,
 }: EmployeeListTableProps<TData, TValue>) {
+  const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
+  const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
+  const canAccessGirls = isSuperAdmin || admin?.permissions?.access_girls_section;
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
   const [nameSearch, setNameSearch] = React.useState<string>('');
-  const [branchFilter, setBranchFilter] = React.useState<number | ''>('');
+  const [branchFilter, setBranchFilter] = React.useState<number | null>(() => {
+    if (admin) {
+      if (canAccessBoys && !canAccessGirls) {
+        return Branch.BOYS;
+      }
+      if (!canAccessBoys && canAccessGirls) {
+        return Branch.GIRLS;
+      }
+    }
+    return null;
+  });
   const [employmentTypeFilter, setEmploymentTypeFilter] = React.useState<number | ''>('');
 
   const filteredData = React.useMemo(() => {
     let filtered = data as Employee[];
 
-    filtered = filtered.filter((employee) => !employee.disable);
+    // Initial section-based filtering for non-super admins
+    if (!isSuperAdmin) {
+      filtered = filtered.filter((employee) => {
+        if (employee.branch === Branch.BOYS) return canAccessBoys;
+        if (employee.branch === Branch.GIRLS) return canAccessGirls;
+        return true;
+      });
+    }
 
     if (nameSearch) {
       filtered = filtered.filter((employee) =>
@@ -89,7 +112,7 @@ export function EmployeeListTable<TData, TValue>({
       );
     }
 
-    if (branchFilter !== '') {
+    if (branchFilter !== null) {
       filtered = filtered.filter((employee) => employee.branch === branchFilter);
     }
 
@@ -107,7 +130,15 @@ export function EmployeeListTable<TData, TValue>({
     });
 
     return filtered as TData[];
-  }, [data, nameSearch, branchFilter, employmentTypeFilter]);
+  }, [
+    data,
+    nameSearch,
+    branchFilter,
+    employmentTypeFilter,
+    canAccessBoys,
+    canAccessGirls,
+    isSuperAdmin,
+  ]);
 
   const table = useReactTable({
     data: filteredData,
@@ -145,32 +176,36 @@ export function EmployeeListTable<TData, TValue>({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-9 px-3 bg-transparent">
-                {branchFilter === '' ? 'Branch' : toBranchLabel(branchFilter)}
+                {branchFilter === null ? 'Branch' : toBranchLabel(branchFilter)}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
-                checked={branchFilter === ''}
-                onCheckedChange={() => setBranchFilter('')}
+                checked={branchFilter === null}
+                onCheckedChange={() => setBranchFilter(null)}
               >
                 All Branches
               </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={branchFilter === Branch.BOYS}
-                onCheckedChange={() =>
-                  setBranchFilter(branchFilter === Branch.BOYS ? '' : Branch.BOYS)
-                }
-              >
-                Boys
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={branchFilter === Branch.GIRLS}
-                onCheckedChange={() =>
-                  setBranchFilter(branchFilter === Branch.GIRLS ? '' : Branch.GIRLS)
-                }
-              >
-                Girls
-              </DropdownMenuCheckboxItem>
+              {canAccessBoys && (
+                <DropdownMenuCheckboxItem
+                  checked={branchFilter === Branch.BOYS}
+                  onCheckedChange={() =>
+                    setBranchFilter(branchFilter === Branch.BOYS ? null : Branch.BOYS)
+                  }
+                >
+                  Boys
+                </DropdownMenuCheckboxItem>
+              )}
+              {canAccessGirls && (
+                <DropdownMenuCheckboxItem
+                  checked={branchFilter === Branch.GIRLS}
+                  onCheckedChange={() =>
+                    setBranchFilter(branchFilter === Branch.GIRLS ? null : Branch.GIRLS)
+                  }
+                >
+                  Girls
+                </DropdownMenuCheckboxItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 

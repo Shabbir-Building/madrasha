@@ -7,7 +7,7 @@ import { DonationListTable, donationListTableColumns } from './_components/Donat
 const DonationsPage = async () => {
   const session = await getServerSession(authOptions);
   const response = await getDonations({
-    accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+    accessToken: session?.accessToken,
   });
 
   if (!response) return;
@@ -18,6 +18,7 @@ const DonationsPage = async () => {
         columns={donationListTableColumns}
         data={response.docs}
         title="Donations"
+        admin={session?.admin}
       />
     </main>
   );

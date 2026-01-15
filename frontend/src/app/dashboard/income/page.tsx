@@ -7,14 +7,19 @@ import { IncomeListTable, incomeListTableColumns } from './_components/IncomeLis
 const IncomePage = async () => {
   const session = await getServerSession(authOptions);
   const response = await getIncomes({
-    accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+    accessToken: session?.accessToken,
   });
 
   if (!response) return;
 
   return (
     <main className="container mx-auto">
-      <IncomeListTable columns={incomeListTableColumns} data={response.docs} title="Income" />
+      <IncomeListTable
+        columns={incomeListTableColumns}
+        data={response.docs}
+        title="Income"
+        admin={session?.admin}
+      />
     </main>
   );
 };

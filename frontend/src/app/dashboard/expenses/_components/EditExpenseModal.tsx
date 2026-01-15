@@ -1,6 +1,9 @@
 'use client';
 
-import { BRANCH_MAP, BRANCH_REVERSE_MAP, type BranchLabel } from '@/domain/branches/constants';
+import { type AdminProfile, AdminRole } from '@/domain/admins';
+import { type BranchLabel } from '@/domain/branches/constants';
+import { Branch } from '@/domain/branches/enums';
+import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import {
   EXPENSE_TYPE_MAP,
   EXPENSE_TYPE_REVERSE_MAP,
@@ -47,12 +50,7 @@ const expenseTypeOptions: ExpenseTypeLabel[] = [
 ];
 
 const expenseSchema = z.object({
-  branch: z
-    .string()
-    .min(1, 'Please select a branch')
-    .refine((val) => branchOptions.includes(val as BranchLabel), {
-      message: 'Please select a valid branch',
-    }),
+  branch: z.number().min(1, 'Please select a branch'),
   type: z
     .string()
     .min(1, 'Please select an expense type')
@@ -73,12 +71,17 @@ interface EditExpenseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   expense: Expense | null;
+  admin?: AdminProfile;
 }
 
-export function EditExpenseModal({ open, onOpenChange, expense }: EditExpenseModalProps) {
+export function EditExpenseModal({ open, onOpenChange, expense, admin }: EditExpenseModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
+
+  const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
+  const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
+  const canAccessGirls = isSuperAdmin || admin?.permissions?.access_girls_section;
 
   const {
     register,
@@ -89,7 +92,7 @@ export function EditExpenseModal({ open, onOpenChange, expense }: EditExpenseMod
   } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
-      branch: '',
+      branch: 0,
       type: '',
       notes: '',
       expense_date: '',
@@ -99,11 +102,10 @@ export function EditExpenseModal({ open, onOpenChange, expense }: EditExpenseMod
 
   useEffect(() => {
     if (expense) {
-      const branchLabel = BRANCH_MAP[expense.branch as keyof typeof BRANCH_MAP];
       const typeLabel = EXPENSE_TYPE_MAP[expense.type as keyof typeof EXPENSE_TYPE_MAP];
 
       reset({
-        branch: branchLabel,
+        branch: expense.branch,
         type: typeLabel,
         notes: expense.notes,
         expense_date: expense.expense_date.split('T')[0],
@@ -117,20 +119,19 @@ export function EditExpenseModal({ open, onOpenChange, expense }: EditExpenseMod
 
     setIsSubmitting(true);
     try {
-      const branchValue = BRANCH_REVERSE_MAP[data.branch as BranchLabel];
       const typeValue = EXPENSE_TYPE_REVERSE_MAP[data.type as ExpenseTypeLabel];
 
       await updateExpense(
         expense._id,
         {
-          branch: branchValue,
+          branch: data.branch,
           type: typeValue,
           amount: data.amount,
           expense_date: data.expense_date,
           notes: data.notes,
         },
         {
-          accessToken: (session as typeof session & { accessToken?: string })?.accessToken,
+          accessToken: session?.accessToken,
         },
       );
 
@@ -169,16 +170,24 @@ export function EditExpenseModal({ open, onOpenChange, expense }: EditExpenseMod
                 name="branch"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value && field.value !== 0 ? field.value.toString() : undefined}
+                    onValueChange={(val) => field.onChange(Number.parseInt(val))}
+                  >
                     <SelectTrigger className={errors.branch ? 'border-red-500' : ''}>
                       <SelectValue placeholder="Select branch" />
                     </SelectTrigger>
                     <SelectContent>
-                      {branchOptions.map((branch) => (
-                        <SelectItem key={branch} value={branch}>
-                          {branch}
+                      {canAccessBoys && (
+                        <SelectItem value={String(Branch.BOYS)}>
+                          {BRANCH_LABELS[Branch.BOYS]}
                         </SelectItem>
-                      ))}
+                      )}
+                      {canAccessGirls && (
+                        <SelectItem value={String(Branch.GIRLS)}>
+                          {BRANCH_LABELS[Branch.GIRLS]}
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 )}

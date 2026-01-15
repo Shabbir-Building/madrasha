@@ -13,7 +13,7 @@ type OverviewPageProps = {
 
 const OverviewPage = async ({ searchParams }: OverviewPageProps) => {
   const session = await getServerSession(authOptions);
-  const accessToken = (session as typeof session & { accessToken?: string })?.accessToken;
+  const accessToken = session?.accessToken;
 
   const resolvedSearchParams = await searchParams;
 
