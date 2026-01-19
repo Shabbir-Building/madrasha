@@ -1,7 +1,5 @@
 import MadrasaLogo from '~/public/images/habrul ummah model madrasa logo.svg';
-import MadrashaImage1 from '~/public/images/madrasha-images-1.png';
-import MadrashaImage2 from '~/public/images/madrasha-images-2.jpg';
-import MadrashaImage3 from '~/public/images/madrasha-images-3.jpg';
+import MadrashaHomeBg from '~/public/images/madrasha-home-background.jpg';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,12 +8,12 @@ import BackgroundSlider from '@/components/ui/background-slider';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
-  const sliderImages = [MadrashaImage1, MadrashaImage2, MadrashaImage3];
+  const sliderImages = [MadrashaHomeBg];
 
   return (
     <>
-      <BackgroundSlider images={sliderImages} />
-      <main className="relative flex flex-col gap-8 items-center justify-center text-center max-w-2xl mx-auto px-4 py-8 min-h-screen w-full">
+      {/* <BackgroundSlider images={sliderImages} /> */}
+      <main className="relative flex flex-col bg-primary gap-8 items-center justify-center text-center w-full mx-auto px-4 py-8 min-h-screen w-full">
         <div className="flex justify-center">
           <Image
             src={MadrasaLogo}
@@ -27,14 +25,15 @@ export default function Home() {
           />
         </div>
 
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg text-balance">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-balance">
           Habrul Ummah Model Madrasa
         </h1>
+        <h5 className="text-2xl md:text-3xl">Rajibpur, Sadar, Laxmipur 3720</h5>
 
         <Link href="/dashboard/overview">
           <Button
             size="lg"
-            className="cursor-pointer text-primary-foreground font-semibold px-8 py-3 dark:text-white"
+            className="cursor-pointer text-black bg-white font-semibold shadow-xl px-8 py-3 dark:text-black hover:bg-gray-100"
           >
             Go to Dashboard
           </Button>

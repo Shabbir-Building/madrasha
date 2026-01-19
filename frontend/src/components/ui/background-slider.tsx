@@ -33,7 +33,7 @@ const BackgroundSlider = ({
 
   return (
     <div className={`fixed inset-0 w-full h-screen -z-10 ${className}`}>
-      <div className="absolute inset-0 bg-black/60 z-10" />
+      {/* <div className="absolute inset-0 bg-black/60 z-10" /> */}
 
       {images.map((image, index) => (
         <div
