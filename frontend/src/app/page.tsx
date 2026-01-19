@@ -1,14 +1,12 @@
 import MadrasaLogo from '~/public/images/habrul ummah model madrasa logo.svg';
-import MadrashaHomeBg from '~/public/images/madrasha-home-background.jpg';
 
 import Image from 'next/image';
 import Link from 'next/link';
 
-import BackgroundSlider from '@/components/ui/background-slider';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
-  const sliderImages = [MadrashaHomeBg];
+  // const sliderImages = [MadrashaHomeBg];
 
   return (
     <>
