@@ -33,14 +33,22 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const filterablePages = [
+    '/dashboard/overview',
+    '/dashboard/income',
+    '/dashboard/expenses',
+    '/dashboard/donations',
+  ];
+  const isFilterablePage = filterablePages.includes(pathname);
   const isOverviewPage = pathname === '/dashboard/overview';
 
   // Generate year options (current year and previous 5 years)
   const currentYear = getCurrentYear();
   const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
-  // State for selected year (default to current year)
-  const [selectedYear, setSelectedYear] = useState<number | 'all-years'>(currentYear);
+  // Get year from search params (default to current year)
+  const yearParam = searchParams.get('year');
+  const selectedYear = yearParam ? Number.parseInt(yearParam, 10) : currentYear;
 
   // State for print modal
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -50,8 +58,12 @@ export function SiteHeader() {
   const selectedBranch: BranchFilterValue =
     branchParam === 'boys' || branchParam === 'girls' ? branchParam : 'all';
 
-  const handleYearChange = (year: number | 'all-years') => {
-    setSelectedYear(year);
+  const handleYearChange = (year: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('year', year.toString());
+    const paramsString = params.toString();
+    const nextPath = paramsString ? `${pathname}?${paramsString}` : pathname;
+    router.replace(nextPath, { scroll: false });
   };
 
   const handleBranchChange = (branch: BranchFilterValue) => {
@@ -73,7 +85,7 @@ export function SiteHeader() {
   };
 
   const getDisplayText = () => {
-    return selectedYear === 'all-years' ? 'All Years' : selectedYear.toString();
+    return selectedYear.toString();
   };
 
   const getBranchDisplayText = () => branchLabels[selectedBranch];
@@ -83,9 +95,11 @@ export function SiteHeader() {
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
         <SidebarTrigger className="-ml-1 cursor-pointer" />
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
-        <h1 className="text-base font-medium">Overview</h1>
+        <h1 className="text-base font-medium capitalize">
+          {pathname.split('/').pop()?.replace(/-/g, ' ')}
+        </h1>
         <div className="ml-auto flex items-center gap-2">
-          {isOverviewPage && (
+          {isFilterablePage && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="h-8 px-3 bg-transparent">

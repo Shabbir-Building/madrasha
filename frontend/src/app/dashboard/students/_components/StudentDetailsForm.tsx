@@ -838,7 +838,7 @@ export function StudentDetailsForm({ admin, accessToken, studentId }: StudentDet
 
             <div className="space-y-2">
               <Label className="text-md" htmlFor="webinars_amount">
-                Webinars Amount
+                Waiver Amount
               </Label>
               {isEditing ? (
                 <Input

@@ -1,7 +1,7 @@
 import { type Request, type Response } from "express";
 import mongoose from "mongoose";
 
-import { HttpStatus, PAGINATION_DEFAULTS } from "../config/constants";
+import { HttpStatus } from "../config/constants";
 import { type AuthenticatedAdmin } from "../middlewares/auth/types";
 import { Expense } from "../models/expense/expense.model";
 import type {
@@ -14,20 +14,56 @@ import { AppError } from "../utils/AppError";
 
 export const getExpenses = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
-  const page = Math.max(1, Number(req.query.page) || PAGINATION_DEFAULTS.PAGE);
-  const limit = Math.min(
-    Number(req.query.limit) || 1000,
-    PAGINATION_DEFAULTS.MAX_LIMIT
-  );
+  const page = 1;
+  const year = req.query.year
+    ? Number.parseInt(req.query.year as string, 10)
+    : null;
+  const month = req.query.month
+    ? Number.parseInt(req.query.month as string, 10)
+    : null;
+  const branch = req.query.branch
+    ? Number.parseInt(req.query.branch as string, 10)
+    : null;
+  const type = req.query.type
+    ? Number.parseInt(req.query.type as string, 10)
+    : null;
 
+  const filter: any = {};
+
+  if (year) {
+    if (month) {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+      filter.expense_date = { $gte: startDate, $lte: endDate };
+    } else {
+      const startDate = new Date(year, 0, 1);
+      const endDate = new Date(year, 11, 31, 23, 59, 59);
+      filter.expense_date = { $gte: startDate, $lte: endDate };
+    }
+  } else if (month) {
+    const currentYear = new Date().getFullYear();
+    const startDate = new Date(currentYear, month - 1, 1);
+    const endDate = new Date(currentYear, month, 0, 23, 59, 59);
+    filter.expense_date = { $gte: startDate, $lte: endDate };
+  }
+
+  if (branch) {
+    filter.branch = branch;
+  }
+
+  if (type) {
+    filter.type = type;
+  }
+
+  const limit = 10000;
   const skip = (page - 1) * limit;
 
-  const [expenses, total] = await Promise.all([
-    Expense.find()
+  const [expenses, total, totalSum] = await Promise.all([
+    Expense.find(filter)
       .select(
-        "_id branch type amount expense_date notes admin_id createdAt updatedAt"
+        "_id branch type amount expense_date notes admin_id createdAt updatedAt",
       )
       .populate({
         path: "admin_id",
@@ -41,7 +77,11 @@ export const getExpenses = async (
       .skip(skip)
       .sort({ expense_date: -1 })
       .lean(),
-    Expense.countDocuments(),
+    Expense.countDocuments(filter),
+    Expense.aggregate([
+      { $match: filter },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]),
   ]);
 
   const pages = Math.ceil(total / limit);
@@ -49,6 +89,7 @@ export const getExpenses = async (
   const paginationResult: PaginationResult<ExpenseListItem> = {
     docs: expenses as unknown as ExpenseListItem[],
     total,
+    totalAmount: totalSum[0]?.total || 0,
     page,
     pages,
     limit,
@@ -68,7 +109,7 @@ export const getExpenses = async (
 
 export const createExpense = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const admin = res.locals.admin as AuthenticatedAdmin | undefined;
 
@@ -106,7 +147,7 @@ export const createExpense = async (
 
 export const updateExpense = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const admin = res.locals.admin as AuthenticatedAdmin | undefined;
 
@@ -139,7 +180,7 @@ export const updateExpense = async (
         notes,
       },
     },
-    { new: true }
+    { new: true },
   );
 
   if (!updated) {
@@ -157,7 +198,7 @@ export const updateExpense = async (
 
 export const deleteExpense = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const admin = res.locals.admin as AuthenticatedAdmin | undefined;
 

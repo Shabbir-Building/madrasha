@@ -1,5 +1,6 @@
 import { Branch } from '@/domain/branches/enums';
 import { authOptions } from '@/lib/auth';
+import { getCurrentYear } from '@/lib/date-utils';
 import { getDonationsByMonth, getIncomeExpenseComparison } from '@/services/analytics';
 import { getServerSession } from 'next-auth';
 
@@ -36,22 +37,36 @@ const OverviewPage = async ({ searchParams }: OverviewPageProps) => {
     return undefined;
   })();
 
+  const yearParam = (() => {
+    const param = resolvedSearchParams?.year;
+    if (Array.isArray(param)) return param[0];
+    return param;
+  })();
+
+  const selectedYear = yearParam ? Number.parseInt(yearParam, 10) : getCurrentYear();
+
   const [incomeExpenseData, donationsData] = await Promise.all([
     getIncomeExpenseComparison({
       accessToken,
-      ...(selectedBranch != null ? { query: { branch: String(selectedBranch) } } : {}),
+      query: {
+        ...(selectedBranch != null ? { branch: String(selectedBranch) } : {}),
+        year: String(selectedYear),
+      },
     }),
     getDonationsByMonth({
       accessToken,
-      ...(selectedBranch != null ? { query: { branch: String(selectedBranch) } } : {}),
+      query: {
+        ...(selectedBranch != null ? { branch: String(selectedBranch) } : {}),
+        year: String(selectedYear),
+      },
     }),
   ]);
 
   return (
     <>
-      <SectionCards accessToken={accessToken} branch={selectedBranch} />
-      <IncomeExpenseChartBar data={incomeExpenseData || []} />
-      <DonationLineChart data={donationsData || []} />
+      <SectionCards accessToken={accessToken} branch={selectedBranch} year={selectedYear} />
+      <IncomeExpenseChartBar data={incomeExpenseData || []} year={selectedYear} />
+      <DonationLineChart data={donationsData || []} year={selectedYear} />
     </>
   );
 };

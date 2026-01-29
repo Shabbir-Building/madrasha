@@ -8,6 +8,7 @@ import {
   StudentClass,
   StudentSection,
 } from '@/domain/students';
+import { getCurrentYear } from '@/lib/date-utils';
 import type { Student } from '@/services/students/types';
 import {
   type ColumnDef,
@@ -74,7 +75,7 @@ export function StudentListTable<TData, TValue>({
 
   const [sectionFilter, setSectionFilter] = React.useState<number | null>(null);
   const [classFilter, setClassFilter] = React.useState<number | null>(null);
-  const [yearFilter, setYearFilter] = React.useState<string>('');
+  const [yearFilter, setYearFilter] = React.useState<string>(() => getCurrentYear().toString());
 
   const filteredData = React.useMemo(() => {
     let filtered = data as Student[];
@@ -105,7 +106,7 @@ export function StudentListTable<TData, TValue>({
     if (classFilter !== null) {
       filtered = filtered.filter((student) => student.class === classFilter);
     }
-    if (yearFilter) {
+    if (yearFilter && yearFilter !== 'all') {
       filtered = filtered.filter((student) =>
         student.enrollment_years.includes(Number.parseInt(yearFilter)),
       );
@@ -286,21 +287,23 @@ export function StudentListTable<TData, TValue>({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-9 px-3 bg-transparent">
-                {yearFilter || 'Year'}
+                {yearFilter === 'all' ? 'All Years' : yearFilter || 'Year'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
-                checked={!yearFilter}
-                onCheckedChange={() => setYearFilter('')}
+                checked={yearFilter === 'all'}
+                onCheckedChange={() => setYearFilter('all')}
               >
                 All Years
               </DropdownMenuCheckboxItem>
-              {['2025', '2024', '2023', '2022'].map((year) => (
+              {Array.from({ length: getCurrentYear() - 2021 + 1 }, (_, i) =>
+                (getCurrentYear() - i).toString(),
+              ).map((year) => (
                 <DropdownMenuCheckboxItem
                   key={year}
                   checked={yearFilter === year}
-                  onCheckedChange={() => setYearFilter(yearFilter === year ? '' : year)}
+                  onCheckedChange={() => setYearFilter(year)}
                 >
                   {year}
                 </DropdownMenuCheckboxItem>

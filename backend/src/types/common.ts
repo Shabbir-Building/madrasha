@@ -20,6 +20,7 @@ export type PaginationQuery = {
 export type PaginationResult<T> = {
   docs: T[];
   total: number;
+  totalAmount?: number;
   page: number;
   pages: number;
   limit: number;

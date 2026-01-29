@@ -34,16 +34,18 @@ const chartConfig = {
 
 type IncomeExpenseChartBarProps = {
   data: MonthlyIncomeExpense[];
+  year?: number;
 };
 
-export function IncomeExpenseChartBar({ data }: IncomeExpenseChartBarProps) {
+export function IncomeExpenseChartBar({ data, year }: IncomeExpenseChartBarProps) {
   const currentYear = new Date().getFullYear();
+  const displayYear = year || currentYear;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Income & Expense - Comparison per Month</CardTitle>
-        <CardDescription>January - December {currentYear}</CardDescription>
+        <CardDescription>January - December {displayYear}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-80 w-full">

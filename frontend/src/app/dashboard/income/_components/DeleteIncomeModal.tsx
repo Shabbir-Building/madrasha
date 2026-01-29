@@ -1,5 +1,6 @@
 'use client';
 
+import { Branch } from '@/domain/branches';
 import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import { INCOME_TYPE_LABELS, IncomeType as IncomeTypeEnum } from '@/domain/income';
 import type { Income } from '@/services/income/types';
@@ -16,7 +17,7 @@ type DeleteIncomeModalProps = {
 
 const formatIncomeSummary = (income: Income) => {
   const typeLabel = INCOME_TYPE_LABELS[income.type as IncomeTypeEnum] ?? 'Unknown';
-  const branchLabel = BRANCH_LABELS[income.branch as 1 | 2] ?? 'Unknown';
+  const branchLabel = BRANCH_LABELS[income.branch as Branch] ?? 'Unknown';
   return `${typeLabel} • ${branchLabel}`;
 };
 

@@ -3,7 +3,7 @@
 import { DonationPrintModal } from '@/app/dashboard/_components/DonationPrintModal';
 import { type AdminProfile, AdminRole } from '@/domain/admins';
 import { Branch } from '@/domain/branches/enums';
-import { BRANCH_LABELS, parseBranchLabel } from '@/domain/branches/lib/labels';
+import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import {
   DONATION_TYPE_MAP,
   DONATION_TYPE_REVERSE_MAP,
@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 
 import * as React from 'react';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -94,19 +94,44 @@ export function DonationListTable<TData, TValue>({
   const [isDeleting, setIsDeleting] = React.useState(false);
   const router = useRouter();
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   // Search and filter states
-  const [nameSearch, setNameSearch] = React.useState<string>('');
+  const [nameSearch, setNameSearch] = React.useState<string>(searchParams.get('name') || '');
   const [branchFilter, setBranchFilter] = React.useState<Branch | null>(() => {
+    const branch = searchParams.get('branch');
+    if (branch) return Number.parseInt(branch) as Branch;
     if (admin) {
       if (canAccessBoys && !canAccessGirls) return Branch.BOYS;
       if (!canAccessBoys && canAccessGirls) return Branch.GIRLS;
     }
     return null;
   });
-  const [typeFilter, setTypeFilter] = React.useState<DonationTypeLabel | ''>('');
-  const [monthFilter, setMonthFilter] = React.useState<string>('');
-  const [yearFilter, setYearFilter] = React.useState<string>('');
+  const [typeFilter, setTypeFilter] = React.useState<DonationTypeLabel | ''>(() => {
+    const type = searchParams.get('type');
+    if (type) {
+      const typeNum = Number.parseInt(type);
+      return DONATION_TYPE_MAP[typeNum as keyof typeof DONATION_TYPE_MAP] || '';
+    }
+    return '';
+  });
+  const [monthFilter, setMonthFilter] = React.useState<string>(searchParams.get('month') || '');
+  const [yearFilter, setYearFilter] = React.useState<string>(() => {
+    return searchParams.get('year') || getCurrentYear().toString();
+  });
+
+  const updateFilters = (updates: Record<string, string | number | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === '') {
+        params.delete(key);
+      } else {
+        params.set(key, value.toString());
+      }
+    });
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   const handleEditDonation = (donation: Donation) => {
     setSelectedDonation(donation);
@@ -175,7 +200,7 @@ export function DonationListTable<TData, TValue>({
       });
     }
 
-    if (yearFilter) {
+    if (yearFilter && yearFilter !== 'all') {
       filtered = filtered.filter((donation) => {
         const donationDate = new Date(donation.donation_date);
         return donationDate.getFullYear() === Number.parseInt(yearFilter);
@@ -183,7 +208,17 @@ export function DonationListTable<TData, TValue>({
     }
 
     return filtered as TData[];
-  }, [data, nameSearch, branchFilter, typeFilter, monthFilter, yearFilter]);
+  }, [
+    data,
+    nameSearch,
+    branchFilter,
+    typeFilter,
+    monthFilter,
+    yearFilter,
+    isSuperAdmin,
+    canAccessBoys,
+    canAccessGirls,
+  ]);
 
   // Calculate total amount from filtered data
   const totalAmount = React.useMemo(() => {
@@ -261,9 +296,9 @@ export function DonationListTable<TData, TValue>({
     { value: '12', label: 'December' },
   ];
 
-  // Generate year options (current year and previous 5 years)
+  // Generate year options (current year down to 2021)
   const currentYear = getCurrentYear();
-  const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
+  const yearOptions = Array.from({ length: currentYear - 2021 + 1 }, (_, i) => currentYear - i);
 
   return (
     <div className="w-full space-y-4">
@@ -291,16 +326,21 @@ export function DonationListTable<TData, TValue>({
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
                 checked={branchFilter === null}
-                onCheckedChange={() => setBranchFilter(null)}
+                onCheckedChange={() => {
+                  setBranchFilter(null);
+                  updateFilters({ branch: '' });
+                }}
               >
                 All Branches
               </DropdownMenuCheckboxItem>
               {canAccessBoys && (
                 <DropdownMenuCheckboxItem
                   checked={branchFilter === Branch.BOYS}
-                  onCheckedChange={() =>
-                    setBranchFilter(branchFilter === Branch.BOYS ? null : Branch.BOYS)
-                  }
+                  onCheckedChange={() => {
+                    const newValue = branchFilter === Branch.BOYS ? null : Branch.BOYS;
+                    setBranchFilter(newValue);
+                    updateFilters({ branch: newValue !== null ? newValue : '' });
+                  }}
                 >
                   {BRANCH_LABELS[Branch.BOYS]}
                 </DropdownMenuCheckboxItem>
@@ -308,9 +348,11 @@ export function DonationListTable<TData, TValue>({
               {canAccessGirls && (
                 <DropdownMenuCheckboxItem
                   checked={branchFilter === Branch.GIRLS}
-                  onCheckedChange={() =>
-                    setBranchFilter(branchFilter === Branch.GIRLS ? null : Branch.GIRLS)
-                  }
+                  onCheckedChange={() => {
+                    const newValue = branchFilter === Branch.GIRLS ? null : Branch.GIRLS;
+                    setBranchFilter(newValue);
+                    updateFilters({ branch: newValue !== null ? newValue : '' });
+                  }}
                 >
                   {BRANCH_LABELS[Branch.GIRLS]}
                 </DropdownMenuCheckboxItem>
@@ -327,7 +369,10 @@ export function DonationListTable<TData, TValue>({
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
                 checked={!typeFilter}
-                onCheckedChange={() => setTypeFilter('')}
+                onCheckedChange={() => {
+                  setTypeFilter('');
+                  updateFilters({ type: '' });
+                }}
               >
                 All Types
               </DropdownMenuCheckboxItem>
@@ -335,9 +380,13 @@ export function DonationListTable<TData, TValue>({
                 <DropdownMenuCheckboxItem
                   key={donationType}
                   checked={typeFilter === donationType}
-                  onCheckedChange={() =>
-                    setTypeFilter(typeFilter === donationType ? '' : donationType)
-                  }
+                  onCheckedChange={() => {
+                    const newValue = typeFilter === donationType ? '' : donationType;
+                    setTypeFilter(newValue);
+                    updateFilters({
+                      type: newValue ? DONATION_TYPE_REVERSE_MAP[newValue] : '',
+                    });
+                  }}
                 >
                   {donationType}
                 </DropdownMenuCheckboxItem>
@@ -354,7 +403,10 @@ export function DonationListTable<TData, TValue>({
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
                 checked={!monthFilter}
-                onCheckedChange={() => setMonthFilter('')}
+                onCheckedChange={() => {
+                  setMonthFilter('');
+                  updateFilters({ month: '' });
+                }}
               >
                 All Months
               </DropdownMenuCheckboxItem>
@@ -362,9 +414,11 @@ export function DonationListTable<TData, TValue>({
                 <DropdownMenuCheckboxItem
                   key={month.value}
                   checked={monthFilter === month.value}
-                  onCheckedChange={() =>
-                    setMonthFilter(monthFilter === month.value ? '' : month.value)
-                  }
+                  onCheckedChange={() => {
+                    const newValue = monthFilter === month.value ? '' : month.value;
+                    setMonthFilter(newValue);
+                    updateFilters({ month: newValue });
+                  }}
                 >
                   {month.label}
                 </DropdownMenuCheckboxItem>
@@ -375,13 +429,16 @@ export function DonationListTable<TData, TValue>({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-9 px-3 bg-transparent">
-                {yearFilter || 'Year'}
+                {yearFilter === 'all' ? 'All Years' : yearFilter || 'Year'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
-                checked={!yearFilter}
-                onCheckedChange={() => setYearFilter('')}
+                checked={yearFilter === 'all'}
+                onCheckedChange={() => {
+                  setYearFilter('all');
+                  updateFilters({ year: 'all' });
+                }}
               >
                 All Years
               </DropdownMenuCheckboxItem>
@@ -389,9 +446,11 @@ export function DonationListTable<TData, TValue>({
                 <DropdownMenuCheckboxItem
                   key={year}
                   checked={yearFilter === year.toString()}
-                  onCheckedChange={() =>
-                    setYearFilter(yearFilter === year.toString() ? '' : year.toString())
-                  }
+                  onCheckedChange={() => {
+                    const yearStr = year.toString();
+                    setYearFilter(yearStr);
+                    updateFilters({ year: yearStr });
+                  }}
                 >
                   {year}
                 </DropdownMenuCheckboxItem>
@@ -540,10 +599,7 @@ export const donationListTableColumns: ColumnDef<Donation>[] = [
     header: 'Branch',
     cell: ({ row }) => {
       const branchValue = row.getValue('branch') as number;
-      const branchLabelFromMap = BRANCH_LABELS[branchValue as keyof typeof BRANCH_LABELS];
-      const branchEnum = branchLabelFromMap ? parseBranchLabel(branchLabelFromMap) : null;
-      const displayLabel = branchEnum ? BRANCH_LABELS[branchEnum] : (branchLabelFromMap ?? 'N/A');
-      return <div className="text-sm">{displayLabel}</div>;
+      return <div className="text-sm">{BRANCH_LABELS[branchValue as Branch] || 'N/A'}</div>;
     },
   },
   {

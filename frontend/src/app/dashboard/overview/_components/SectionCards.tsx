@@ -15,12 +15,16 @@ import {
 type SectionCardsProps = {
   accessToken?: string;
   branch?: Branch;
+  year?: number;
 };
 
-export async function SectionCards({ accessToken, branch }: SectionCardsProps) {
+export async function SectionCards({ accessToken, branch, year }: SectionCardsProps) {
   const stats = await getOverviewStats({
     accessToken,
-    ...(branch != null ? { query: { branch: String(branch) } } : {}),
+    query: {
+      ...(branch != null ? { branch: String(branch) } : {}),
+      ...(year != null ? { year: String(year) } : {}),
+    },
   });
 
   if (!stats) {
@@ -56,7 +60,7 @@ export async function SectionCards({ accessToken, branch }: SectionCardsProps) {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Total income for this year <TrendingUp className="size-4" />
+            Total income for {year || 'this year'} <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">Realtime income calculation</div>
         </CardFooter>
@@ -71,7 +75,7 @@ export async function SectionCards({ accessToken, branch }: SectionCardsProps) {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Total donations for this year <TrendingUp className="size-4" />
+            Total donations for {year || 'this year'} <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">Realtime donations calculation</div>
         </CardFooter>
@@ -86,7 +90,7 @@ export async function SectionCards({ accessToken, branch }: SectionCardsProps) {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Total expense for this year <TrendingUp className="size-4" />
+            Total expense for {year || 'this year'} <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">Realtime expense calculation</div>
         </CardFooter>
@@ -101,7 +105,7 @@ export async function SectionCards({ accessToken, branch }: SectionCardsProps) {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Total balance for this year <TrendingUp className="size-4" />
+            Total balance for {year || 'this year'} <TrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">Realtime total balance calculation</div>
         </CardFooter>

@@ -111,11 +111,15 @@ const parseBranchQuery = (value: unknown): number | undefined => {
 
 export const getOverviewStats = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const currentYear = new Date().getFullYear();
-  const yearStart = new Date(currentYear, 0, 1);
-  const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
+  const selectedYear = req.query.year
+    ? Number.parseInt(req.query.year as string, 10)
+    : currentYear;
+
+  const yearStart = new Date(selectedYear, 0, 1);
+  const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59);
   const branchParam = parseBranchQuery(req.query.branch);
 
   const branchFilter =
@@ -175,11 +179,15 @@ export const getOverviewStats = async (
 
 export const getIncomeExpenseComparison = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const currentYear = new Date().getFullYear();
-  const yearStart = new Date(currentYear, 0, 1);
-  const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
+  const selectedYear = req.query.year
+    ? Number.parseInt(req.query.year as string, 10)
+    : currentYear;
+
+  const yearStart = new Date(selectedYear, 0, 1);
+  const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59);
   const branchParam = parseBranchQuery(req.query.branch);
   const branchFilter =
     branchParam != null ? { branch: branchParam } : undefined;
@@ -218,10 +226,10 @@ export const getIncomeExpenseComparison = async (
 
   // Create lookup maps
   const incomeMap = new Map(
-    incomeByMonth.map((item) => [item._id, item.total])
+    incomeByMonth.map((item) => [item._id, item.total]),
   );
   const expenseMap = new Map(
-    expenseByMonth.map((item) => [item._id, item.total])
+    expenseByMonth.map((item) => [item._id, item.total]),
   );
 
   // Build array with all 12 months
@@ -230,7 +238,7 @@ export const getIncomeExpenseComparison = async (
       month,
       income: incomeMap.get(index + 1) || 0,
       expense: expenseMap.get(index + 1) || 0,
-    })
+    }),
   );
 
   const response: ApiResponse<MonthlyIncomeExpense[]> = {
@@ -245,11 +253,15 @@ export const getIncomeExpenseComparison = async (
 
 export const getDonationsByMonth = async (
   _req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const currentYear = new Date().getFullYear();
-  const yearStart = new Date(currentYear, 0, 1);
-  const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
+  const selectedYear = _req.query.year
+    ? Number.parseInt(_req.query.year as string, 10)
+    : currentYear;
+
+  const yearStart = new Date(selectedYear, 0, 1);
+  const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59);
   const branchParam = parseBranchQuery(_req.query.branch);
 
   const branchFilter =
@@ -311,7 +323,7 @@ export const getDonationsByMonth = async (
 
 export const getReportOverview = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { startDate, endDate } = req.query;
   const branchParam = parseBranchQuery(req.query.branch);
@@ -382,10 +394,10 @@ export const getReportOverview = async (
   // Create lookup maps
   const incomeMap = new Map(incomeByDay.map((item) => [item._id, item.total]));
   const donationMap = new Map(
-    donationsByDay.map((item) => [item._id, item.total])
+    donationsByDay.map((item) => [item._id, item.total]),
   );
   const expenseMap = new Map(
-    expensesByDay.map((item) => [item._id, item.total])
+    expensesByDay.map((item) => [item._id, item.total]),
   );
 
   // Generate continuous date range
@@ -424,7 +436,7 @@ export const getReportOverview = async (
 
 export const getIncomeReport = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { startDate, endDate } = req.query;
   const branchParam = parseBranchQuery(req.query.branch);
@@ -506,7 +518,7 @@ export const getIncomeReport = async (
 
 export const getExpenseReport = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { startDate, endDate } = req.query;
   const branchParam = parseBranchQuery(req.query.branch);
@@ -536,7 +548,9 @@ export const getExpenseReport = async (
     {
       $group: {
         _id: {
-          date: { $dateToString: { format: "%Y-%m-%d", date: "$expense_date" } },
+          date: {
+            $dateToString: { format: "%Y-%m-%d", date: "$expense_date" },
+          },
           type: "$type",
         },
         total: { $sum: "$amount" },
@@ -593,7 +607,7 @@ export const getExpenseReport = async (
 
 export const getDonationReport = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { startDate, endDate } = req.query;
   const branchParam = parseBranchQuery(req.query.branch);

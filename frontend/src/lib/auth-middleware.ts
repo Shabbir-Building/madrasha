@@ -34,7 +34,6 @@ export const buildRedirect = (reqUrl: string, target: string): NextResponse => {
 };
 
 // Optional role guard mapping (extend when needed)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const requiredRolesForPath = (pathname: string): number[] | undefined => {
   if (pathname === '/dashboard/overview' || pathname === '/dashboard/admins') {
     return [AdminRole.SUPER_ADMIN];
