@@ -85,9 +85,6 @@ export const buildStudentPayload = (values: StudentFormPayloadSource): CreateStu
   }
 
   const classFee = toNumber(values.class_fee);
-  if (classFee <= 0) {
-    throw new Error('Class fee must be greater than 0');
-  }
 
   const waiverAmount = toNumber(values.waiver_amount, toNumber(values.webinars_amount));
 

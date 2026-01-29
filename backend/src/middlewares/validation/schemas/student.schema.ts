@@ -24,7 +24,7 @@ export const createStudentSchema = z
       .string()
       .regex(
         /^[0-9]{10,17}$/i,
-        "Birth certificate number must be 10-17 digits"
+        "Birth certificate number must be 10-17 digits",
       ),
     gender: z
       .string()
@@ -52,7 +52,11 @@ export const createStudentSchema = z
     residential_category: z.string().optional(),
     residential_fee: z.number().min(0).optional().default(0),
     waiver_amount: z.number().min(0).optional().default(0),
-    class_fee: z.number().min(1, "Class fee must be greater than 0"),
+    class_fee: z
+      .number()
+      .min(0, "Class fee must be non-negative")
+      .optional()
+      .default(0),
     guardian_name: z
       .string()
       .min(1, "Guardian name is required")

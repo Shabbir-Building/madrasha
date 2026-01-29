@@ -65,8 +65,8 @@ const studentFormSchema = z
     residential_category: z.string().optional().or(z.literal('')),
 
     // Fee Information
-    class_fee: z.coerce.number(),
-    residential_fee: z.coerce.number().min(0),
+    class_fee: z.coerce.number().optional().default(0),
+    residential_fee: z.coerce.number().optional().default(0),
     waiver_amount: z.coerce.number().min(0, 'Waiver amount must be positive'),
     total: z.coerce.number(),
 
@@ -86,34 +86,12 @@ const studentFormSchema = z
     guardian_permanent_location: z.string().min(1, 'Guardian permanent location is required'),
   })
   .superRefine((data, ctx) => {
-    if (data.class_fee === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Class fee must be greater than 0',
-        path: ['class_fee'],
-      });
-    } else if (data.class_fee < 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Class fee must be greater than 0',
-        path: ['class_fee'],
-      });
-    }
-
     if (data.residential) {
       if (!data.residential_category || data.residential_category.length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Residential category is required when residential is selected',
           path: ['residential_category'],
-        });
-      }
-
-      if (data.residential_fee <= 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Residential fee must be greater than 0 when residential is selected',
-          path: ['residential_fee'],
         });
       }
     }
@@ -226,7 +204,7 @@ export function AddStudentForm({ admin, accessToken }: AddStudentFormProps) {
       const { error } = await createStudent(payload, {
         accessToken: accessToken,
       });
-
+      console.log('sddsfsf', error);
       if (error) {
         throw new Error(error.statusText || 'Failed to create student');
       }
@@ -236,7 +214,7 @@ export function AddStudentForm({ admin, accessToken }: AddStudentFormProps) {
       setHasAttemptedSubmit(false);
       router.push('/dashboard/students');
       toast.success('Student created successfully');
-    } catch {
+    } catch (error) {
       setErrorMessage('Failed to create student');
       toast.error('Failed to create student');
     } finally {
@@ -675,7 +653,7 @@ export function AddStudentForm({ admin, accessToken }: AddStudentFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label className="text-md" htmlFor="class_fee">
-                Class Fee <span className="text-destructive">*</span>
+                Class Fee
               </Label>
               <Input
                 className="bg-muted/40 dark:bg-input/40"
@@ -691,7 +669,7 @@ export function AddStudentForm({ admin, accessToken }: AddStudentFormProps) {
             {watchedValues.residential && (
               <div className="space-y-2">
                 <Label className="text-md" htmlFor="residential_fee">
-                  Residential Fee <span className="text-destructive">*</span>
+                  Residential Fee
                 </Label>
                 <Input
                   className="bg-muted/40 dark:bg-input/40"

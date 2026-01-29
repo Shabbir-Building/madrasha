@@ -52,6 +52,7 @@ const studentSchema: Schema = new mongoose.Schema(
     },
     residential_fee: {
       type: Number,
+      default: 0,
       min: 0,
     },
     is_day_care: {
@@ -78,7 +79,7 @@ const studentSchema: Schema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const Student = mongoose.model("Student", studentSchema);

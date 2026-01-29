@@ -827,6 +827,7 @@ export function StudentDetailsForm({ admin, accessToken, studentId }: StudentDet
                     type="number"
                     {...register('residential_fee', { valueAsNumber: true })}
                     placeholder="Enter residential fee"
+                    disabled
                   />
                 ) : (
                   <div className="p-2 text-md bg-muted/40 rounded-md">

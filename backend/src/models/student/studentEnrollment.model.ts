@@ -27,16 +27,16 @@ const studentEnrollmentSchema: Schema = new mongoose.Schema(
     },
     fee: {
       type: Number,
-      required: true,
+      default: 0,
       min: 0,
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const StudentEnrollment = mongoose.model(
   "StudentEnrollment",
-  studentEnrollmentSchema
+  studentEnrollmentSchema,
 );
