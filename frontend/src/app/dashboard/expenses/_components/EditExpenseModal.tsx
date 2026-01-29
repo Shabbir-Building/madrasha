@@ -1,7 +1,6 @@
 'use client';
 
 import { type AdminProfile, AdminRole } from '@/domain/admins';
-import { type BranchLabel } from '@/domain/branches/constants';
 import { Branch } from '@/domain/branches/enums';
 import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import {
@@ -35,7 +34,6 @@ import {
 
 import type { Expense } from './ExpenseListTable';
 
-const branchOptions: BranchLabel[] = ['Boys', 'Girls'];
 const expenseTypeOptions: ExpenseTypeLabel[] = [
   'Salary',
   'Hostel',

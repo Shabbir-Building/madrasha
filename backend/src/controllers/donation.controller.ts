@@ -1,7 +1,7 @@
 import { type Request, type Response } from "express";
 import mongoose from "mongoose";
 
-import { HttpStatus, PAGINATION_DEFAULTS } from "../config/constants";
+import { HttpStatus } from "../config/constants";
 import { type AuthenticatedAdmin } from "../middlewares/auth/types";
 import { Donation } from "../models/donation/donation.model";
 import type {
@@ -14,20 +14,56 @@ import { AppError } from "../utils/AppError";
 
 export const getDonations = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
-  const page = Math.max(1, Number(req.query.page) || PAGINATION_DEFAULTS.PAGE);
-  const limit = Math.min(
-    Number(req.query.limit) || 1000,
-    PAGINATION_DEFAULTS.MAX_LIMIT
-  );
+  const page = 1;
+  const year = req.query.year
+    ? Number.parseInt(req.query.year as string, 10)
+    : null;
+  const month = req.query.month
+    ? Number.parseInt(req.query.month as string, 10)
+    : null;
+  const branch = req.query.branch
+    ? Number.parseInt(req.query.branch as string, 10)
+    : null;
+  const type = req.query.type
+    ? Number.parseInt(req.query.type as string, 10)
+    : null;
 
+  const filter: any = {};
+
+  if (year) {
+    if (month) {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+      filter.donation_date = { $gte: startDate, $lte: endDate };
+    } else {
+      const startDate = new Date(year, 0, 1);
+      const endDate = new Date(year, 11, 31, 23, 59, 59);
+      filter.donation_date = { $gte: startDate, $lte: endDate };
+    }
+  } else if (month) {
+    const currentYear = new Date().getFullYear();
+    const startDate = new Date(currentYear, month - 1, 1);
+    const endDate = new Date(currentYear, month, 0, 23, 59, 59);
+    filter.donation_date = { $gte: startDate, $lte: endDate };
+  }
+
+  if (branch) {
+    filter.branch = branch;
+  }
+
+  if (type) {
+    filter.donation_type = type;
+  }
+
+  const limit = 10000;
   const skip = (page - 1) * limit;
 
-  const [donations, total] = await Promise.all([
-    Donation.find()
+  const [donations, total, totalSum] = await Promise.all([
+    Donation.find(filter)
       .select(
-        "_id branch donation_type fullname phone_number donation_amount donation_date notes admin_id createdAt updatedAt"
+        "_id branch donation_type fullname phone_number donation_amount donation_date notes admin_id createdAt updatedAt",
       )
       .populate({
         path: "admin_id",
@@ -41,7 +77,11 @@ export const getDonations = async (
       .skip(skip)
       .sort({ donation_date: -1 })
       .lean(),
-    Donation.countDocuments(),
+    Donation.countDocuments(filter),
+    Donation.aggregate([
+      { $match: filter },
+      { $group: { _id: null, total: { $sum: "$donation_amount" } } },
+    ]),
   ]);
 
   const pages = Math.ceil(total / limit);
@@ -49,6 +89,7 @@ export const getDonations = async (
   const paginationResult: PaginationResult<DonationListItem> = {
     docs: donations as unknown as DonationListItem[],
     total,
+    totalAmount: totalSum[0]?.total || 0,
     page,
     pages,
     limit,
@@ -68,7 +109,7 @@ export const getDonations = async (
 
 export const createDonation = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const admin = res.locals.admin as AuthenticatedAdmin | undefined;
 
@@ -115,7 +156,7 @@ export const createDonation = async (
 
 export const updateDonation = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const admin = res.locals.admin as AuthenticatedAdmin | undefined;
 
@@ -157,7 +198,7 @@ export const updateDonation = async (
         notes,
       },
     },
-    { new: true }
+    { new: true },
   );
 
   if (!updated) {
@@ -175,7 +216,7 @@ export const updateDonation = async (
 
 export const deleteDonation = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const admin = res.locals.admin as AuthenticatedAdmin | undefined;
 

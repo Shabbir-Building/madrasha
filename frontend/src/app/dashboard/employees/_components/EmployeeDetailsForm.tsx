@@ -169,7 +169,8 @@ export function EmployeeDetailsForm({ admin, accessToken, employeeId }: Employee
       }
 
       // Convert backend data to form format
-      const branchLabel = employee.branch === 1 ? 'Boys' : employee.branch === 2 ? 'Girls' : '';
+      console.log('eeeelelle', employee.branch);
+      const branchLabel = employee.branch === 2 ? 'Boys' : employee.branch === 3 ? 'Girls' : '';
       const joinDate = employee.join_date
         ? new Date(employee.join_date).toISOString().split('T')[0]
         : '';

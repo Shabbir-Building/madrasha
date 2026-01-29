@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 
 import * as React from 'react';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -60,6 +60,7 @@ type IncomeListTableProps<TData, TValue> = {
   title?: string;
   description?: string;
   admin?: AdminProfile;
+  totalAmount?: number;
 };
 
 export function IncomeListTable<TData, TValue>({
@@ -67,6 +68,7 @@ export function IncomeListTable<TData, TValue>({
   data,
   title = 'Income',
   admin,
+  totalAmount: backendTotalAmount,
 }: IncomeListTableProps<TData, TValue>) {
   const isSuperAdmin = admin?.role === AdminRole.SUPER_ADMIN;
   const canAccessBoys = isSuperAdmin || admin?.permissions?.access_boys_section;
@@ -81,19 +83,41 @@ export function IncomeListTable<TData, TValue>({
   const [isDeleting, setIsDeleting] = React.useState(false);
   const router = useRouter();
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   // Search and filter states
-  const [noteSearch, setNoteSearch] = React.useState<string>('');
+  const [noteSearch, setNoteSearch] = React.useState<string>(searchParams.get('note') || '');
   const [branchFilter, setBranchFilter] = React.useState<number | ''>(() => {
+    const branch = searchParams.get('branch');
+    if (branch) return Number.parseInt(branch);
     if (admin) {
       if (canAccessBoys && !canAccessGirls) return Branch.BOYS;
       if (!canAccessBoys && canAccessGirls) return Branch.GIRLS;
     }
     return '';
   });
-  const [typeFilter, setTypeFilter] = React.useState<number | ''>('');
-  const [monthFilter, setMonthFilter] = React.useState<string>('');
-  const [yearFilter, setYearFilter] = React.useState<string>('');
+  const [typeFilter, setTypeFilter] = React.useState<number | ''>(() => {
+    const type = searchParams.get('type');
+    if (type) return Number.parseInt(type);
+    return '';
+  });
+  const [monthFilter, setMonthFilter] = React.useState<string>(searchParams.get('month') || '');
+  const [yearFilter, setYearFilter] = React.useState<string>(() => {
+    return searchParams.get('year') || getCurrentYear().toString();
+  });
+
+  const updateFilters = (updates: Record<string, string | number | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === '') {
+        params.delete(key);
+      } else {
+        params.set(key, value.toString());
+      }
+    });
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   const handleEditIncome = (income: Income) => {
     setSelectedIncome(income);
@@ -161,7 +185,7 @@ export function IncomeListTable<TData, TValue>({
       });
     }
 
-    if (yearFilter) {
+    if (yearFilter && yearFilter !== 'all') {
       filtered = filtered.filter((income) => {
         const incomeDate = new Date(income.income_date);
         return incomeDate.getFullYear() === Number.parseInt(yearFilter);
@@ -183,9 +207,29 @@ export function IncomeListTable<TData, TValue>({
 
   // Calculate total amount from filtered data
   const totalAmount = React.useMemo(() => {
+    const hasFilters = !!(
+      noteSearch ||
+      branchFilter ||
+      typeFilter ||
+      monthFilter ||
+      (yearFilter && yearFilter !== 'all' && yearFilter !== getCurrentYear().toString())
+    );
+
+    if (!hasFilters && backendTotalAmount !== undefined) {
+      return backendTotalAmount;
+    }
+
     const filteredIncomes = filteredData as Income[];
     return filteredIncomes.reduce((sum, income) => sum + income.amount, 0);
-  }, [filteredData]);
+  }, [
+    filteredData,
+    backendTotalAmount,
+    noteSearch,
+    branchFilter,
+    typeFilter,
+    monthFilter,
+    yearFilter,
+  ]);
 
   const updatedColumns = React.useMemo(() => {
     return columns.map((column) => {
@@ -257,9 +301,9 @@ export function IncomeListTable<TData, TValue>({
     { value: '12', label: 'December' },
   ];
 
-  // Generate year options (current year and previous 5 years)
+  // Generate year options (current year down to 2021)
   const currentYear = getCurrentYear();
-  const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
+  const yearOptions = Array.from({ length: currentYear - 2021 + 1 }, (_, i) => currentYear - i);
 
   return (
     <div className="w-full space-y-4">
@@ -281,28 +325,39 @@ export function IncomeListTable<TData, TValue>({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-9 px-3 bg-transparent">
-                {branchFilter ? BRANCH_LABELS[branchFilter as 1 | 2] : 'Branch'}
+                {branchFilter ? BRANCH_LABELS[branchFilter as Branch] : 'Branch'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
                 checked={!branchFilter}
-                onCheckedChange={() => setBranchFilter('')}
+                onCheckedChange={() => {
+                  setBranchFilter('');
+                  updateFilters({ branch: '' });
+                }}
               >
                 All Branches
               </DropdownMenuCheckboxItem>
               {canAccessBoys && (
                 <DropdownMenuCheckboxItem
-                  checked={branchFilter === 1}
-                  onCheckedChange={() => setBranchFilter(branchFilter === 1 ? '' : 1)}
+                  checked={branchFilter === Branch.BOYS}
+                  onCheckedChange={() => {
+                    const newValue = branchFilter === Branch.BOYS ? '' : Branch.BOYS;
+                    setBranchFilter(newValue);
+                    updateFilters({ branch: newValue });
+                  }}
                 >
                   Boys
                 </DropdownMenuCheckboxItem>
               )}
               {canAccessGirls && (
                 <DropdownMenuCheckboxItem
-                  checked={branchFilter === 2}
-                  onCheckedChange={() => setBranchFilter(branchFilter === 2 ? '' : 2)}
+                  checked={branchFilter === Branch.GIRLS}
+                  onCheckedChange={() => {
+                    const newValue = branchFilter === Branch.GIRLS ? '' : Branch.GIRLS;
+                    setBranchFilter(newValue);
+                    updateFilters({ branch: newValue });
+                  }}
                 >
                   Girls
                 </DropdownMenuCheckboxItem>
@@ -319,7 +374,10 @@ export function IncomeListTable<TData, TValue>({
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
                 checked={!typeFilter}
-                onCheckedChange={() => setTypeFilter('')}
+                onCheckedChange={() => {
+                  setTypeFilter('');
+                  updateFilters({ type: '' });
+                }}
               >
                 All Types
               </DropdownMenuCheckboxItem>
@@ -329,7 +387,11 @@ export function IncomeListTable<TData, TValue>({
                   <DropdownMenuCheckboxItem
                     key={value}
                     checked={typeFilter === numValue}
-                    onCheckedChange={() => setTypeFilter(typeFilter === numValue ? '' : numValue)}
+                    onCheckedChange={() => {
+                      const newValue = typeFilter === numValue ? '' : numValue;
+                      setTypeFilter(newValue);
+                      updateFilters({ type: newValue });
+                    }}
                   >
                     {label}
                   </DropdownMenuCheckboxItem>
@@ -347,7 +409,10 @@ export function IncomeListTable<TData, TValue>({
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
                 checked={!monthFilter}
-                onCheckedChange={() => setMonthFilter('')}
+                onCheckedChange={() => {
+                  setMonthFilter('');
+                  updateFilters({ month: '' });
+                }}
               >
                 All Months
               </DropdownMenuCheckboxItem>
@@ -355,9 +420,11 @@ export function IncomeListTable<TData, TValue>({
                 <DropdownMenuCheckboxItem
                   key={month.value}
                   checked={monthFilter === month.value}
-                  onCheckedChange={() =>
-                    setMonthFilter(monthFilter === month.value ? '' : month.value)
-                  }
+                  onCheckedChange={() => {
+                    const newValue = monthFilter === month.value ? '' : month.value;
+                    setMonthFilter(newValue);
+                    updateFilters({ month: newValue });
+                  }}
                 >
                   {month.label}
                 </DropdownMenuCheckboxItem>
@@ -368,13 +435,16 @@ export function IncomeListTable<TData, TValue>({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-9 px-3 bg-transparent">
-                {yearFilter || 'Year'}
+                {yearFilter === 'all' ? 'All Years' : yearFilter || 'Year'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
-                checked={!yearFilter}
-                onCheckedChange={() => setYearFilter('')}
+                checked={yearFilter === 'all'}
+                onCheckedChange={() => {
+                  setYearFilter('all');
+                  updateFilters({ year: 'all' });
+                }}
               >
                 All Years
               </DropdownMenuCheckboxItem>
@@ -382,9 +452,11 @@ export function IncomeListTable<TData, TValue>({
                 <DropdownMenuCheckboxItem
                   key={year}
                   checked={yearFilter === year.toString()}
-                  onCheckedChange={() =>
-                    setYearFilter(yearFilter === year.toString() ? '' : year.toString())
-                  }
+                  onCheckedChange={() => {
+                    const yearStr = year.toString();
+                    setYearFilter(yearStr);
+                    updateFilters({ year: yearStr });
+                  }}
                 >
                   {year}
                 </DropdownMenuCheckboxItem>
@@ -540,7 +612,7 @@ export const incomeListTableColumns: ColumnDef<Income>[] = [
     header: 'Branch',
     cell: ({ row }) => {
       const branch = row.getValue('branch') as number;
-      return <div className="text-sm">{BRANCH_LABELS[branch as 1 | 2]}</div>;
+      return <div className="text-sm">{BRANCH_LABELS[branch as Branch]}</div>;
     },
   },
   {

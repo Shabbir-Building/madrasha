@@ -4,7 +4,9 @@ import mongoose from "mongoose";
 import { env } from "../config/env";
 import { getConnectionInfo } from "../config/database";
 import { HttpStatus } from "../config/constants";
-import { ApiResponse } from "@/types/common";
+import { type ApiResponse } from "@/types/common";
+
+import { asyncHandler } from "../utils/asyncHandler";
 
 const router = Router();
 
@@ -53,5 +55,55 @@ router.get("/test", (_req: Request, res: Response) => {
 
   res.status(HttpStatus.OK).json(response);
 });
+
+/**
+ * Seed data endpoint (Development only)
+ */
+router.post(
+  "/seed",
+  asyncHandler(async (_req: Request, res: Response) => {
+    if (env.NODE_ENV === "production") {
+      res.status(HttpStatus.FORBIDDEN).json({
+        success: false,
+        message: "Seeding is not allowed in production",
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      message: "Data cleared and seeded successfully",
+      timestamp: new Date().toISOString(),
+    };
+
+    res.status(HttpStatus.OK).json(response);
+  }),
+);
+
+/**
+ * Clear data endpoint (Development only)
+ */
+router.post(
+  "/clear",
+  asyncHandler(async (_req: Request, res: Response) => {
+    if (env.NODE_ENV === "production") {
+      res.status(HttpStatus.FORBIDDEN).json({
+        success: false,
+        message: "Clearing data is not allowed in production",
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      message: "Data cleared successfully",
+      timestamp: new Date().toISOString(),
+    };
+
+    res.status(HttpStatus.OK).json(response);
+  }),
+);
 
 export default router;

@@ -22,10 +22,12 @@ const chartConfig = {
 
 type DonationLineChartProps = {
   data: MonthlyDonations[];
+  year?: number;
 };
 
-export function DonationLineChart({ data }: DonationLineChartProps) {
+export function DonationLineChart({ data, year }: DonationLineChartProps) {
   const currentYear = new Date().getFullYear();
+  const displayYear = year || currentYear;
 
   const totalChartData = data.map((item) => ({
     ...item,
@@ -36,7 +38,7 @@ export function DonationLineChart({ data }: DonationLineChartProps) {
     <Card>
       <CardHeader>
         <CardTitle>Donations - Total per Month</CardTitle>
-        <CardDescription>January - December {currentYear}</CardDescription>
+        <CardDescription>January - December {displayYear}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-80 w-full">

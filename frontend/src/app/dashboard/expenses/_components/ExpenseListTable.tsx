@@ -29,7 +29,7 @@ import { toast } from 'sonner';
 
 import * as React from 'react';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -98,19 +98,44 @@ export function ExpenseListTable({
   const [isDeleting, setIsDeleting] = React.useState(false);
   const router = useRouter();
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   // Search and filter states
-  const [noteSearch, setNoteSearch] = React.useState<string>('');
+  const [noteSearch, setNoteSearch] = React.useState<string>(searchParams.get('note') || '');
   const [branchFilter, setBranchFilter] = React.useState<Branch | ''>(() => {
+    const branch = searchParams.get('branch');
+    if (branch) return Number.parseInt(branch) as Branch;
     if (admin) {
       if (canAccessBoys && !canAccessGirls) return Branch.BOYS;
       if (!canAccessBoys && canAccessGirls) return Branch.GIRLS;
     }
     return '';
   });
-  const [typeFilter, setTypeFilter] = React.useState<ExpenseTypeLabel | ''>('');
-  const [monthFilter, setMonthFilter] = React.useState<string>('');
-  const [yearFilter, setYearFilter] = React.useState<string>('');
+  const [typeFilter, setTypeFilter] = React.useState<ExpenseTypeLabel | ''>(() => {
+    const type = searchParams.get('type');
+    if (type) {
+      const typeNum = Number.parseInt(type);
+      return EXPENSE_TYPE_MAP[typeNum as keyof typeof EXPENSE_TYPE_MAP] || '';
+    }
+    return '';
+  });
+  const [monthFilter, setMonthFilter] = React.useState<string>(searchParams.get('month') || '');
+  const [yearFilter, setYearFilter] = React.useState<string>(() => {
+    return searchParams.get('year') || getCurrentYear().toString();
+  });
+
+  const updateFilters = (updates: Record<string, string | number | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === '') {
+        params.delete(key);
+      } else {
+        params.set(key, value.toString());
+      }
+    });
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   const handleEditExpense = (expense: Expense) => {
     setSelectedExpense(expense);
@@ -179,7 +204,7 @@ export function ExpenseListTable({
       });
     }
 
-    if (yearFilter) {
+    if (yearFilter && yearFilter !== 'all') {
       filtered = filtered.filter((expense) => {
         const expenseDate = new Date(expense.expense_date);
         return expenseDate.getFullYear() === Number.parseInt(yearFilter);
@@ -274,9 +299,9 @@ export function ExpenseListTable({
     { value: '12', label: 'December' },
   ];
 
-  // Generate year options (current year and previous 5 years)
+  // Generate year options (current year down to 2021)
   const currentYear = getCurrentYear();
-  const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
+  const yearOptions = Array.from({ length: currentYear - 2021 + 1 }, (_, i) => currentYear - i);
 
   return (
     <div className="w-full space-y-4">
@@ -304,16 +329,21 @@ export function ExpenseListTable({
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
                 checked={!branchFilter}
-                onCheckedChange={() => setBranchFilter('')}
+                onCheckedChange={() => {
+                  setBranchFilter('');
+                  updateFilters({ branch: '' });
+                }}
               >
                 All Branches
               </DropdownMenuCheckboxItem>
               {canAccessBoys && (
                 <DropdownMenuCheckboxItem
                   checked={branchFilter === Branch.BOYS}
-                  onCheckedChange={() =>
-                    setBranchFilter(branchFilter === Branch.BOYS ? '' : Branch.BOYS)
-                  }
+                  onCheckedChange={() => {
+                    const newValue = branchFilter === Branch.BOYS ? '' : Branch.BOYS;
+                    setBranchFilter(newValue);
+                    updateFilters({ branch: newValue });
+                  }}
                 >
                   Boys
                 </DropdownMenuCheckboxItem>
@@ -321,9 +351,11 @@ export function ExpenseListTable({
               {canAccessGirls && (
                 <DropdownMenuCheckboxItem
                   checked={branchFilter === Branch.GIRLS}
-                  onCheckedChange={() =>
-                    setBranchFilter(branchFilter === Branch.GIRLS ? '' : Branch.GIRLS)
-                  }
+                  onCheckedChange={() => {
+                    const newValue = branchFilter === Branch.GIRLS ? '' : Branch.GIRLS;
+                    setBranchFilter(newValue);
+                    updateFilters({ branch: newValue });
+                  }}
                 >
                   Girls
                 </DropdownMenuCheckboxItem>
@@ -340,7 +372,10 @@ export function ExpenseListTable({
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
                 checked={!typeFilter}
-                onCheckedChange={() => setTypeFilter('')}
+                onCheckedChange={() => {
+                  setTypeFilter('');
+                  updateFilters({ type: '' });
+                }}
               >
                 All Types
               </DropdownMenuCheckboxItem>
@@ -348,9 +383,13 @@ export function ExpenseListTable({
                 <DropdownMenuCheckboxItem
                   key={expenseType}
                   checked={typeFilter === expenseType}
-                  onCheckedChange={() =>
-                    setTypeFilter(typeFilter === expenseType ? '' : expenseType)
-                  }
+                  onCheckedChange={() => {
+                    const newValue = typeFilter === expenseType ? '' : expenseType;
+                    setTypeFilter(newValue);
+                    updateFilters({
+                      type: newValue ? EXPENSE_TYPE_REVERSE_MAP[newValue] : '',
+                    });
+                  }}
                 >
                   {expenseType}
                 </DropdownMenuCheckboxItem>
@@ -367,7 +406,10 @@ export function ExpenseListTable({
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
                 checked={!monthFilter}
-                onCheckedChange={() => setMonthFilter('')}
+                onCheckedChange={() => {
+                  setMonthFilter('');
+                  updateFilters({ month: '' });
+                }}
               >
                 All Months
               </DropdownMenuCheckboxItem>
@@ -375,9 +417,11 @@ export function ExpenseListTable({
                 <DropdownMenuCheckboxItem
                   key={month.value}
                   checked={monthFilter === month.value}
-                  onCheckedChange={() =>
-                    setMonthFilter(monthFilter === month.value ? '' : month.value)
-                  }
+                  onCheckedChange={() => {
+                    const newValue = monthFilter === month.value ? '' : month.value;
+                    setMonthFilter(newValue);
+                    updateFilters({ month: newValue });
+                  }}
                 >
                   {month.label}
                 </DropdownMenuCheckboxItem>
@@ -388,13 +432,16 @@ export function ExpenseListTable({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-9 px-3 bg-transparent">
-                {yearFilter || 'Year'}
+                {yearFilter === 'all' ? 'All Years' : yearFilter || 'Year'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuCheckboxItem
-                checked={!yearFilter}
-                onCheckedChange={() => setYearFilter('')}
+                checked={yearFilter === 'all'}
+                onCheckedChange={() => {
+                  setYearFilter('all');
+                  updateFilters({ year: 'all' });
+                }}
               >
                 All Years
               </DropdownMenuCheckboxItem>
@@ -402,9 +449,11 @@ export function ExpenseListTable({
                 <DropdownMenuCheckboxItem
                   key={year}
                   checked={yearFilter === year.toString()}
-                  onCheckedChange={() =>
-                    setYearFilter(yearFilter === year.toString() ? '' : year.toString())
-                  }
+                  onCheckedChange={() => {
+                    const yearStr = year.toString();
+                    setYearFilter(yearStr);
+                    updateFilters({ year: yearStr });
+                  }}
                 >
                   {year}
                 </DropdownMenuCheckboxItem>

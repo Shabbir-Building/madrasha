@@ -1,7 +1,7 @@
 import { type Request, type Response } from "express";
 import mongoose from "mongoose";
 
-import { HttpStatus, PAGINATION_DEFAULTS } from "../config/constants";
+import { HttpStatus } from "../config/constants";
 import { type AuthenticatedAdmin } from "../middlewares/auth/types";
 import { Income } from "../models/income/income.model";
 import type {
@@ -14,20 +14,57 @@ import { AppError } from "../utils/AppError";
 
 export const getIncomes = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
-  const page = Math.max(1, Number(req.query.page) || PAGINATION_DEFAULTS.PAGE);
-  const limit = Math.min(
-    Number(req.query.limit) || 1000,
-    PAGINATION_DEFAULTS.MAX_LIMIT
-  );
+  const page = 1;
+  const year = req.query.year
+    ? Number.parseInt(req.query.year as string, 10)
+    : null;
+  const month = req.query.month
+    ? Number.parseInt(req.query.month as string, 10)
+    : null;
+  const branch = req.query.branch
+    ? Number.parseInt(req.query.branch as string, 10)
+    : null;
+  const type = req.query.type
+    ? Number.parseInt(req.query.type as string, 10)
+    : null;
 
+  const filter: any = {};
+
+  if (year) {
+    if (month) {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+      filter.income_date = { $gte: startDate, $lte: endDate };
+    } else {
+      const startDate = new Date(year, 0, 1);
+      const endDate = new Date(year, 11, 31, 23, 59, 59);
+      filter.income_date = { $gte: startDate, $lte: endDate };
+    }
+  } else if (month) {
+    // If month is provided without year, use current year
+    const currentYear = new Date().getFullYear();
+    const startDate = new Date(currentYear, month - 1, 1);
+    const endDate = new Date(currentYear, month, 0, 23, 59, 59);
+    filter.income_date = { $gte: startDate, $lte: endDate };
+  }
+
+  if (branch) {
+    filter.branch = branch;
+  }
+
+  if (type) {
+    filter.type = type;
+  }
+
+  const limit = 10000; // Large limit to get all items as requested
   const skip = (page - 1) * limit;
 
-  const [incomes, total] = await Promise.all([
-    Income.find()
+  const [incomes, total, totalSum] = await Promise.all([
+    Income.find(filter)
       .select(
-        "_id branch type amount income_date notes admin_id createdAt updatedAt"
+        "_id branch type amount income_date notes admin_id createdAt updatedAt",
       )
       .populate({
         path: "admin_id",
@@ -41,7 +78,11 @@ export const getIncomes = async (
       .skip(skip)
       .sort({ income_date: -1 })
       .lean(),
-    Income.countDocuments(),
+    Income.countDocuments(filter),
+    Income.aggregate([
+      { $match: filter },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]),
   ]);
 
   const pages = Math.ceil(total / limit);
@@ -49,6 +90,7 @@ export const getIncomes = async (
   const paginationResult: PaginationResult<IncomeListItem> = {
     docs: incomes as unknown as IncomeListItem[],
     total,
+    totalAmount: totalSum[0]?.total || 0,
     page,
     pages,
     limit,
@@ -68,7 +110,7 @@ export const getIncomes = async (
 
 export const getIncomeById = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { id } = req.params;
 
@@ -94,7 +136,7 @@ export const getIncomeById = async (
 
 export const createIncome = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const admin = res.locals.admin as AuthenticatedAdmin | undefined;
 
@@ -132,7 +174,7 @@ export const createIncome = async (
 
 export const updateIncome = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const admin = res.locals.admin as AuthenticatedAdmin | undefined;
 
@@ -165,7 +207,7 @@ export const updateIncome = async (
         notes,
       },
     },
-    { new: true }
+    { new: true },
   );
 
   if (!updated) {
@@ -183,7 +225,7 @@ export const updateIncome = async (
 
 export const deleteIncome = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const admin = res.locals.admin as AuthenticatedAdmin | undefined;
 

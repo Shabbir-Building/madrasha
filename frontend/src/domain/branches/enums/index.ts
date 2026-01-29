@@ -1,4 +1,4 @@
 export enum Branch {
-  BOYS = 1,
-  GIRLS = 2,
+  BOYS = 2,
+  GIRLS = 3,
 }

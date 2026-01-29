@@ -1,3 +1,4 @@
+import { Branch } from '@/domain/branches';
 import { BRANCH_LABELS } from '@/domain/branches/lib/labels';
 import { INCOME_TYPE_LABELS } from '@/domain/income/lib/labels';
 import type { Income } from '@/services/income/types';
@@ -42,7 +43,7 @@ const buildIncomePDF = (
   if (filters) {
     const filterLabels: string[] = [];
     if (filters.branchFilter) {
-      filterLabels.push(`Branch: ${BRANCH_LABELS[filters.branchFilter as 1 | 2]}`);
+      filterLabels.push(`Branch: ${BRANCH_LABELS[filters.branchFilter as Branch]}`);
     }
     if (filters.typeFilter) {
       filterLabels.push(
@@ -97,7 +98,7 @@ const buildIncomePDF = (
   const tableData = incomes.map((income) => {
     const typeLabel =
       INCOME_TYPE_LABELS[income.type as keyof typeof INCOME_TYPE_LABELS] || 'Unknown';
-    const branchLabel = BRANCH_LABELS[income.branch as 1 | 2] || 'Unknown';
+    const branchLabel = BRANCH_LABELS[income.branch as Branch] || 'Unknown';
     const addedBy = income.admin_id?.employee_id?.fullname || 'Unknown';
     const formattedDate =
       formatDate(income.income_date) || dayjs(income.income_date).format('MM/DD/YYYY');
