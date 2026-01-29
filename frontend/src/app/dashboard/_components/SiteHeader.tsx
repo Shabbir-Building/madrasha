@@ -33,13 +33,6 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const filterablePages = [
-    '/dashboard/overview',
-    '/dashboard/income',
-    '/dashboard/expenses',
-    '/dashboard/donations',
-  ];
-  const isFilterablePage = filterablePages.includes(pathname);
   const isOverviewPage = pathname === '/dashboard/overview';
 
   // Generate year options (current year and previous 5 years)
@@ -99,7 +92,7 @@ export function SiteHeader() {
           {pathname.split('/').pop()?.replace(/-/g, ' ')}
         </h1>
         <div className="ml-auto flex items-center gap-2">
-          {isFilterablePage && (
+          {isOverviewPage && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="h-8 px-3 bg-transparent">
